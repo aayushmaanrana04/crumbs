@@ -19,6 +19,43 @@ const RETRY_CONFIG = {
   MAX_DELAY_MS: 8000
 };
 
+// Helper function to translate WebLLM progress messages to user-friendly text
+function translateProgressMessage(text) {
+  if (!text) return "Initializing...";
+
+  // Extract percentage
+  let percent = 0;
+  const percentMatch = text.match(/(\d+)%/);
+  if (percentMatch) {
+    percent = parseInt(percentMatch[1]);
+  }
+
+  // Translate technical messages to user-friendly ones
+  if (text.includes("Fetching param cache") || text.includes("param cache")) {
+    return `Downloading model files... (${percent}%)`;
+  }
+  if (text.includes("Loading params") || text.includes("param")) {
+    return `Setting up AI model... (${percent}%)`;
+  }
+  if (text.includes("Creating MLCEngine")) {
+    return "Preparing model engine...";
+  }
+  if (text.includes("Initializing")) {
+    return "Initializing...";
+  }
+  if (text.includes("Compiling")) {
+    return `Compiling model for your device... (${percent}%)`;
+  }
+
+  // Default: use original text if it's already user-friendly
+  if (text.includes("Loading") || text.includes("Preparing")) {
+    return text;
+  }
+
+  // For unknown messages, provide generic feedback
+  return `Setting up... (${percent}%)`;
+}
+
 let engine = null;
 let modelLoading = false;
 let modelLoadPromise = null;
@@ -225,7 +262,10 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             initProgressCallback: (info) => {
               console.log(`[offscreen] Progress: ${info.text}`);
 
-              // Calculate percentage from the info text
+              // Translate technical message to user-friendly text
+              const userFriendlyText = translateProgressMessage(info.text);
+
+              // Extract percentage
               let percent = 0;
               if (info.text && info.text.includes("%")) {
                 const match = info.text.match(/(\d+)%/);
@@ -237,7 +277,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
               chrome.runtime.sendMessage(
                 {
                   type: MESSAGE_TYPES.PROGRESS,
-                  text: info.text || "Loading...",
+                  text: userFriendlyText,
                   percent: percent,
                   requestId: request.requestId
                 },

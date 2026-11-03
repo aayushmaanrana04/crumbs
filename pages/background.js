@@ -58,7 +58,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
     chrome.storage.local.get("summaryse_onboarding_shown", (data) => {
       if (!data.summaryse_onboarding_shown) {
-        chrome.tabs.create({ url: "onboarding.html" });
+        chrome.tabs.create({ url: "pages/onboarding.html" });
         chrome.storage.local.set({ summaryse_onboarding_shown: true });
       }
     });

@@ -41,9 +41,31 @@ try {
     })],
     logLevel: 'info',
   });
-  console.log('✅ Svelte build complete!');
+  console.log('✅ Svelte content build complete!');
 } catch (error) {
-  console.error('Svelte build failed:', error.message);
+  console.error('Svelte content build failed:', error.message);
+  process.exit(1);
+}
+
+// Build Svelte onboarding app
+try {
+  await esbuild.build({
+    entryPoints: ['src/onboarding-entry.js'],
+    bundle: true,
+    outfile: path.join(dist, 'pages', 'onboarding-bundle.js'),
+    format: 'iife',
+    globalName: 'SummaryseOnboarding',
+    platform: 'browser',
+    target: 'chrome100',
+    plugins: [esbuildSvelte({
+      preprocess: sveltePreprocess(),
+      compilerOptions: { css: 'injected' }
+    })],
+    logLevel: 'info',
+  });
+  console.log('✅ Svelte onboarding build complete!');
+} catch (error) {
+  console.error('Svelte onboarding build failed:', error.message);
   process.exit(1);
 }
 
