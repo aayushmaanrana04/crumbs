@@ -1,24 +1,43 @@
 {
   "name": "summaryse",
-  "version": "1.0.0",
-  "description": "A Chrome Extension that summarizes selected text using WebLLM for fully local, offline AI inference.",
+  "version": "0.2.0",
+  "description": "Local-first personal knowledge OS, built while you browse.",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "build": "node build.mjs",
-    "dev": "node build.mjs && echo '✅ Build complete'",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run",
+    "postinstall": "wxt prepare",
+    "build:dev": "wxt build --mode development",
+    "bridge:install": "node tools/claude-bridge/install.mjs",
+    "bridge:uninstall": "node tools/claude-bridge/install.mjs --uninstall"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "@mlc-ai/web-llm": "^0.2.83",
-    "marked": "^13.0.0"
+    "@anthropic-ai/sdk": "^1.4.0",
+    "@mozilla/readability": "^0.6.0",
+    "dexie": "^4.4.7",
+    "dompurify": "^3.4.17",
+    "fflate": "^0.8.3",
+    "marked": "^18.1.3",
+    "minisearch": "^7.2.0",
+    "turndown": "^7.2.4",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "esbuild": "^0.28.0",
-    "esbuild-svelte": "^0.9.5",
-    "svelte": "^4.2.20",
-    "svelte-preprocess": "^5.1.0"
+    "@tsconfig/svelte": "^5.0.8",
+    "@types/jsdom": "^30.0.0",
+    "@types/turndown": "^5.0.6",
+    "@wxt-dev/module-svelte": "^2.0.5",
+    "fake-indexeddb": "^6.2.7",
+    "jsdom": "^29.1.1",
+    "svelte": "^5.57.3",
+    "svelte-check": "^4.7.8",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.0",
+    "wxt": "^0.21.5"
   }
 }

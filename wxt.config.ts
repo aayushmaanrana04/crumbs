@@ -1,0 +1,43 @@
+import { defineConfig } from 'wxt';
+import { DEV_EXTENSION_ID, DEV_EXTENSION_KEY } from './src/lib/dev-extension-key';
+import { PROVIDER_ORIGINS } from './src/lib/providers/origins';
+
+export default defineConfig({
+  srcDir: 'src',
+  modules: ['@wxt-dev/module-svelte'],
+  manifest: ({ mode }) => {
+    const dev = mode === 'development';
+    return {
+      name: 'Summaryse',
+      description: 'Your personal knowledge, built while you browse.',
+      // nativeMessaging is only for the Claude dev bridge and never ships.
+      permissions: [
+        'storage',
+        'unlimitedStorage',
+        // Saving uses one-time access to the current tab (activeTab), not access to every site.
+        'activeTab',
+        'scripting',
+        'contextMenus',
+        'alarms',
+        ...(dev ? ['nativeMessaging'] : []),
+      ],
+      // Requested at runtime: provider hosts when a provider is tested, and
+      // individual sites when the user turns on auto-capture for them.
+      optional_host_permissions: [...PROVIDER_ORIGINS, 'https://*/*', 'http://*/*'],
+      commands: {
+        'save-page': {
+          suggested_key: { default: 'Ctrl+Shift+S', mac: 'Command+Shift+S' },
+          description: 'Save this page to Summaryse',
+        },
+      },
+      // Fixed ID in development so the dev bridge can allow-list it.
+      ...(dev ? { key: DEV_EXTENSION_KEY } : {}),
+    };
+  },
+  webExt: {
+    // Persistent dev profile: keeps settings between runs and lets Chrome find the dev bridge.
+    chromiumProfile: '.chrome-profile',
+    keepProfileChanges: true,
+    startUrls: [`chrome-extension://${DEV_EXTENSION_ID}/app.html#/settings`],
+  },
+});
