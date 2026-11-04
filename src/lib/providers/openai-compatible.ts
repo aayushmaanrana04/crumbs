@@ -22,14 +22,19 @@ function authHeaders(config: ProviderConfig): Record<string, string> {
   };
 }
 
-async function chatComplete(label: string, config: ProviderConfig, request: CompletionRequest): Promise<CompletionResult> {
+async function chatComplete(
+  label: string,
+  config: ProviderConfig,
+  request: CompletionRequest,
+  extra: Record<string, unknown> = {},
+): Promise<CompletionResult> {
   if (!request.model) throw new ProviderError(`Pick a ${label} model in Settings.`);
   const started = Date.now();
   const messages = [
     ...(request.system ? [{ role: 'system', content: request.system }] : []),
     { role: 'user', content: request.prompt },
   ];
-  const body: Record<string, unknown> = { model: request.model, messages };
+  const body: Record<string, unknown> = { model: request.model, messages, ...extra };
   if (request.schema) {
     body.response_format = { type: 'json_schema', json_schema: { name: 'output', schema: request.schema, strict: true } };
   }
@@ -74,9 +79,17 @@ async function embedTexts(label: string, config: ProviderConfig, model: string, 
 async function listOpenAIModels(label: string, config: ProviderConfig): Promise<ModelInfo[]> {
   const res = await providerFetch(label, `${baseUrl(config)}/models`, { headers: authHeaders(config) });
   if (!res.ok) throw await errorFromResponse(res, label);
-  const json = (await res.json()) as { data?: { id: string }[] };
+  const json = (await res.json()) as { data?: { id: string; name?: string; pricing?: { prompt?: string; completion?: string } }[] };
   if (!Array.isArray(json.data)) throw new ProviderError(`${label} returned an unexpected model list.`);
-  return json.data.map((m) => ({ id: m.id }));
+  return json.data.map((m) => {
+    const input = Number(m.pricing?.prompt) * 1e6;
+    const output = Number(m.pricing?.completion) * 1e6;
+    return {
+      id: m.id,
+      ...(m.name ? { name: m.name } : {}),
+      ...(Number.isFinite(input) && Number.isFinite(output) && input >= 0 ? { price: { input, output } } : {}),
+    };
+  });
 }
 
 export const openai: ProviderAdapter = {
@@ -94,9 +107,18 @@ export const openrouter: ProviderAdapter = {
       headers: { Authorization: `Bearer ${config.apiKey}` },
     });
     if (!res.ok) throw await errorFromResponse(res, 'OpenRouter');
-    return listOpenAIModels('OpenRouter', config);
+    // Embedding models are listed separately from chat models.
+    const [chat, embedding] = await Promise.all([
+      listOpenAIModels('OpenRouter', config),
+      listOpenAIModels('OpenRouter', { ...config, baseUrl: `${baseUrl(config)}/embeddings` }),
+    ]);
+    return [...chat, ...embedding];
   },
-  complete: (config, request) => chatComplete('OpenRouter', config, request),
+  // Route only to hosts that honour every parameter we send (so JSON-schema output is enforced, not
+  // silently dropped) and that don't store or train on prompts, which carry the user's pages.
+  complete: (config, request) =>
+    chatComplete('OpenRouter', config, request, { provider: { require_parameters: true, data_collection: 'deny' } }),
+  embed: (config, model, texts) => embedTexts('OpenRouter', config, model, texts),
 };
 
 export const ollama: ProviderAdapter = {

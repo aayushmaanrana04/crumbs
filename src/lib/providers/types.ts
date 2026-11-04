@@ -4,11 +4,15 @@ export interface ProviderConfig {
   enabled: boolean;
   apiKey: string;
   baseUrl: string;
+  /** Set when the key came from signing in (OpenRouter), not pasted. */
+  connectedAt?: number;
 }
 
 export interface ModelInfo {
   id: string;
   name?: string;
+  /** US dollars per million tokens, when the provider publishes prices (OpenRouter). */
+  price?: { input: number; output: number };
 }
 
 /** Static description of a provider; safe to import anywhere. */

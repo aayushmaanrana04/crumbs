@@ -16,7 +16,7 @@ Phases 0–4 are done:
 - **AI understanding** in the background: summary, key takeaways, facts, topics, entities and auto-tags for each page. Retries, a daily limit and an activity log of every AI call.
 - **Search** by keyword and, with an embedding model, by meaning, showing the matching passage.
 - **Ask** questions across your library, with citations to the exact passage, and the AI's own inferences marked separately.
-- **Providers** with your own key: OpenAI, Anthropic, Google Gemini, OpenRouter and Ollama, plus Chrome built-in AI. Each task (understanding, Ask, search) can use a different model.
+- **Providers**: sign in with OpenRouter (usage is paid from your OpenRouter credit), or use your own key for OpenAI, Anthropic, Google Gemini, OpenRouter and Ollama, plus Chrome built-in AI. Each task (understanding, Ask, search) can use a different model.
 
 - **Side panel** opened from the toolbar: whether you've saved the page, what you've read that relates to it, quick save, notes and Ask. Optional follow mode keeps it in step with your tabs.
 - **Projects** group pages around a goal, with notes, open questions and suggested pages. Ask can be scoped to a project.

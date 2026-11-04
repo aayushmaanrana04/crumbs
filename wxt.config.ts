@@ -20,6 +20,8 @@ export default defineConfig({
         'contextMenus',
         'alarms',
         'sidePanel',
+        // "Connect OpenRouter": the sign-in window that hands back to the extension.
+        'identity',
         ...(dev ? ['nativeMessaging'] : []),
       ],
       // Follow mode only: lets the side panel see the active tab's address and title as you switch tabs.

@@ -13,7 +13,7 @@
     <h1 class="page-title">Settings</h1>
     <SettingsGroup
       title="AI providers"
-      description="Bring your own API key. Keys stay in this browser and are only sent to the provider they belong to."
+      description="Sign in to OpenRouter or bring your own API key. Keys stay in this browser and are only sent to the provider they belong to."
     >
       {#each PROVIDER_KINDS as kind (kind)}<ProviderRow {kind} />{/each}
     </SettingsGroup>

@@ -45,7 +45,7 @@ export const PROVIDER_INFO: Record<ProviderKind, ProviderInfo> = {
     runsIn: 'background',
     hostPermissions: PROVIDER_HOSTS.openrouter,
     supportsCompletion: true,
-    supportsEmbeddings: false,
+    supportsEmbeddings: true,
     defaultModel: '',
   },
   ollama: {
