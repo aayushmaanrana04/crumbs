@@ -94,19 +94,15 @@ interface Profile {
   tags: Set<string>;
 }
 
-async function profiles(docIds: string[]) {
-  const [docs, insights] = await Promise.all([db.documents.bulkGet(docIds), db.insights.bulkGet(docIds)]);
-  const out = new Map<string, Profile>();
-  docIds.forEach((id, i) => {
-    const doc = docs[i];
-    if (!doc) return;
-    const insight = insights[i] ? normalizeInsight(insights[i]!) : undefined;
-    out.set(id, {
-      entities: new Map((insight?.entities ?? []).map((e) => [key(e.name), e.name])),
-      tags: new Set(doc.tags),
-    });
-  });
-  return out;
+/** Names and tags per page, for pages already loaded; only their summaries are read. */
+async function profiles(docs: KnowledgeDocument[]): Promise<Map<string, Profile>> {
+  const insights = await db.insights.bulkGet(docs.map((d) => d.id));
+  return new Map(
+    docs.map((doc, i) => {
+      const insight = insights[i] ? normalizeInsight(insights[i]!) : undefined;
+      return [doc.id, { entities: new Map((insight?.entities ?? []).map((e) => [key(e.name), e.name])), tags: new Set(doc.tags) }];
+    }),
+  );
 }
 
 // A suggestion needs a real signal: two shared names, or a shared name plus a shared tag, etc.
@@ -141,12 +137,12 @@ function scoreFit(candidate: Profile, members: Profile[], doc: KnowledgeDocument
 export async function suggestDocsForProject(projectId: string, limit = 3): Promise<ProjectSuggestion[]> {
   const project = await db.projects.get(projectId);
   if (!project) return [];
-  const memberIds = await projectDocIds(projectId);
-  if (memberIds.length === 0) return [];
   const all = await db.documents.toArray();
+  const inProject = all.filter((d) => d.projectIds.includes(projectId));
+  if (inProject.length === 0) return [];
   const candidates = all.filter((d) => !d.projectIds.includes(projectId) && !project.dismissed.includes(d.id));
-  const prof = await profiles([...memberIds, ...candidates.map((d) => d.id)]);
-  const members = memberIds.map((id) => prof.get(id)!).filter(Boolean);
+  const prof = await profiles(all);
+  const members = inProject.map((d) => prof.get(d.id)!);
   return candidates
     .map((doc) => ({ project, doc, ...scoreFit(prof.get(doc.id)!, members, doc, project) }))
     .filter((s) => s.score >= MIN_SCORE)
@@ -159,12 +155,14 @@ export async function suggestProjectsForDoc(docId: string, limit = 2): Promise<P
   const doc = await db.documents.get(docId);
   if (!doc) return [];
   const projects = (await db.projects.toArray()).filter((p) => !doc.projectIds.includes(p.id) && !p.dismissed.includes(docId));
+  if (projects.length === 0) return [];
+  // One read for every candidate project's pages, then group in memory.
+  const memberDocs = await db.documents.where('projectIds').anyOf(projects.map((p) => p.id)).distinct().toArray();
+  const prof = await profiles([doc, ...memberDocs]);
   const out: ProjectSuggestion[] = [];
   for (const project of projects) {
-    const memberIds = await projectDocIds(project.id);
-    if (memberIds.length === 0) continue;
-    const prof = await profiles([...memberIds, docId]);
-    const members = memberIds.map((id) => prof.get(id)!).filter(Boolean);
+    const members = memberDocs.filter((d) => d.projectIds.includes(project.id)).map((d) => prof.get(d.id)!);
+    if (members.length === 0) continue;
     const fit = scoreFit(prof.get(docId)!, members, doc, project);
     if (fit.score >= MIN_SCORE) out.push({ project, doc, ...fit });
   }

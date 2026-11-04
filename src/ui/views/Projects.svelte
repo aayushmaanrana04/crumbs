@@ -1,6 +1,7 @@
 <script lang="ts">
   import FolderPlus from '@lucide/svelte/icons/folder-plus';
   import { db, type Project } from '@/lib/db/schema';
+  import { projectPageCounts } from '@/lib/library/documents';
   import { createProject, projectEntities } from '@/lib/library/projects';
   import { formatRelative } from '@/ui/format';
   import Button from '@/ui/kit/Button.svelte';
@@ -16,11 +17,11 @@
   }
 
   const rows = live(async (): Promise<Row[]> => {
-    const projects = await db.projects.orderBy('updatedAt').reverse().toArray();
+    const [projects, counts] = await Promise.all([db.projects.orderBy('updatedAt').reverse().toArray(), projectPageCounts()]);
     return Promise.all(
       projects.map(async (project) => ({
         project,
-        pages: await db.documents.where('projectIds').equals(project.id).count(),
+        pages: counts.get(project.id) ?? 0,
         open: project.questions.filter((q) => !q.done).length,
         names: await projectEntities(project.id, 4),
       })),

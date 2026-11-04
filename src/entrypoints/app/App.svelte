@@ -5,6 +5,7 @@
   import SettingsIcon from '@lucide/svelte/icons/settings';
   import Folder from '@lucide/svelte/icons/folder';
   import { db } from '@/lib/db/schema';
+  import { projectPageCounts, tagCounts } from '@/lib/library/documents';
   import GroupLabel from '@/ui/kit/GroupLabel.svelte';
   import NavItem from '@/ui/kit/NavItem.svelte';
   import { live } from '@/ui/live.svelte';
@@ -21,18 +22,18 @@
   const TOP_PROJECTS = 6;
 
   const library = live(async () => {
-    const docs = await db.documents.toArray();
-    const counts = new Map<string, number>();
-    for (const d of docs) for (const t of d.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+    const [count, counts, projectCounts, projects] = await Promise.all([
+      db.documents.count(),
+      tagCounts(),
+      projectPageCounts(),
+      db.projects.orderBy('updatedAt').reverse().limit(TOP_PROJECTS).toArray(),
+    ]);
     // Only tags shared by several pages are useful as quick filters.
     const tags = [...counts]
       .filter(([, n]) => n >= 2)
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .slice(0, TOP_TAGS);
-    const projects = await db.projects.orderBy('updatedAt').reverse().limit(TOP_PROJECTS).toArray();
-    const projectCounts = new Map<string, number>();
-    for (const d of docs) for (const p of d.projectIds) projectCounts.set(p, (projectCounts.get(p) ?? 0) + 1);
-    return { count: docs.length, tags, projects: projects.map((p) => ({ id: p.id, name: p.name, count: projectCounts.get(p.id) ?? 0 })) };
+    return { count, tags, projects: projects.map((p) => ({ id: p.id, name: p.name, count: projectCounts.get(p.id) ?? 0 })) };
   }, { count: 0, tags: [] as [string, number][], projects: [] as { id: string; name: string; count: number }[] });
 
   let storageUsed = $state('');

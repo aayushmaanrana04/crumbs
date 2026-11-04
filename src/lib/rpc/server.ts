@@ -9,7 +9,7 @@ type Handlers = {
 
 const EXTENSION_ORIGIN = new URL(browser.runtime.getURL('/')).origin;
 
-// Extension pages (popup, app tab) have our origin; content scripts report the web page's URL.
+// Extension pages (app tab, side panel) have our origin; content scripts report the web page's URL.
 function fromExtensionPage(sender: RpcSender): boolean {
   return !!sender.url && new URL(sender.url).origin === EXTENSION_ORIGIN;
 }

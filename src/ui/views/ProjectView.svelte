@@ -2,7 +2,7 @@
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
   import Plus from '@lucide/svelte/icons/plus';
   import Trash2 from '@lucide/svelte/icons/trash-2';
-  import { db, normalizeInsight, type KnowledgeDocument } from '@/lib/db/schema';
+  import { db, normalizeInsight, type KnowledgeDocument, type ProjectQuestion } from '@/lib/db/schema';
   import { rowStatus } from '@/lib/library/ai-label';
   import {
     deleteProject,
@@ -15,7 +15,7 @@
     type ProjectSuggestion,
   } from '@/lib/library/projects';
   import { aiStatuses } from '@/ui/ai-status.svelte';
-  import { formatRelative } from '@/ui/format';
+  import { formatRelative, siteLabel } from '@/ui/format';
   import Button from '@/ui/kit/Button.svelte';
   import EmptyState from '@/ui/kit/EmptyState.svelte';
   import ListRow from '@/ui/kit/ListRow.svelte';
@@ -24,7 +24,7 @@
   import QuestionItem from '@/ui/kit/QuestionItem.svelte';
   import SearchField from '@/ui/kit/SearchField.svelte';
   import Suggestion from '@/ui/kit/Suggestion.svelte';
-  import TextArea from '@/ui/kit/TextArea.svelte';
+  import NotesField from '@/ui/components/NotesField.svelte';
   import { live } from '@/ui/live.svelte';
   import { docHref } from '@/ui/router.svelte';
 
@@ -40,48 +40,37 @@
   }, []);
   const ai = aiStatuses();
 
-  let names = $state<string[]>([]);
-  let suggestions = $state<ProjectSuggestion[]>([]);
-  $effect(() => {
-    void pages.value.length;
-    projectEntities(projectId).then((n) => (names = n));
-    suggestDocsForProject(projectId).then((s) => (suggestions = s));
-  });
+  const names = live(() => projectEntities(projectId), [] as string[]);
+  const suggestions = live(() => suggestDocsForProject(projectId), [] as ProjectSuggestion[]);
 
-  let notesDraft = $state<string | null>(null);
-  let notesSaved = $state(false);
   let questionDraft = $state('');
   let adding = $state(false);
   let addQuery = $state('');
 
-  // Saved pages not in this project, filtered by the search text.
+  // Saved pages not in this project, filtered by the search text. Only looked up while "Add pages" is open.
   let candidates = $state<KnowledgeDocument[]>([]);
   $effect(() => {
+    if (!adding) return;
     const q = addQuery.trim().toLowerCase();
     void pages.value.length;
     db.documents
       .orderBy('capturedAt')
       .reverse()
+      .filter((d) => !d.projectIds.includes(projectId) && (!q || d.title.toLowerCase().includes(q)))
+      .limit(8)
       .toArray()
-      .then((docs) => (candidates = docs.filter((d) => !d.projectIds.includes(projectId) && (!q || d.title.toLowerCase().includes(q))).slice(0, 8)));
+      .then((docs) => (candidates = docs));
   });
 
-  async function saveNotes() {
-    if (notesDraft === null || notesDraft === project.value?.notes) return;
-    await updateProject(projectId, { notes: notesDraft });
-    notesSaved = true;
-    setTimeout(() => (notesSaved = false), 1500);
+  async function setQuestions(fn: (qs: ProjectQuestion[]) => ProjectQuestion[]) {
+    if (project.value) await updateProject(projectId, { questions: fn(project.value.questions) });
   }
 
   async function addQuestion(e: SubmitEvent) {
     e.preventDefault();
-    if (!questionDraft.trim() || !project.value) return;
-    await updateProject(projectId, { questions: [...project.value.questions, newQuestion(questionDraft)] });
+    if (!questionDraft.trim()) return;
+    await setQuestions((qs) => [...qs, newQuestion(questionDraft)]);
     questionDraft = '';
-  }
-
-  async function setQuestions(fn: (qs: NonNullable<typeof project.value>['questions']) => NonNullable<typeof project.value>['questions']) {
-    if (project.value) await updateProject(projectId, { questions: fn(project.value.questions) });
   }
 
   async function remove() {
@@ -127,16 +116,13 @@
 
     <div class="layout">
       <section class="main">
-        {#each suggestions as s (s.doc.id)}
+        {#each suggestions.value as s (s.doc.id)}
           <Suggestion
             title="Suggested: {s.doc.title}"
             why={s.why}
             href={docHref(s.doc.id)}
             onadd={() => setDocumentInProject(s.doc.id, projectId, true)}
-            ondismiss={async () => {
-              await dismissSuggestion(projectId, s.doc.id);
-              suggestions = suggestions.filter((x) => x.doc.id !== s.doc.id);
-            }}
+            ondismiss={() => dismissSuggestion(projectId, s.doc.id)}
           />
         {/each}
 
@@ -170,7 +156,7 @@
               <ListRow
                 title={doc.title}
                 summary={gist}
-                site={doc.siteName || new URL(doc.url).hostname}
+                site={siteLabel(doc)}
                 status={status.label}
                 statusTone={status.tone}
                 onselect={() => (location.hash = docHref(doc.id))}
@@ -198,21 +184,12 @@
           </form>
         </section>
 
-        <section>
-          <h2 class="rail-title">Notes & decisions {#if notesSaved}<span class="saved">Saved</span>{/if}</h2>
-          <TextArea
-            rows={6}
-            placeholder="What have you decided? What's next?"
-            value={notesDraft ?? p.notes}
-            oninput={(e) => (notesDraft = e.currentTarget.value)}
-            onblur={saveNotes}
-          />
-        </section>
+        <NotesField label="Notes & decisions" rows={6} placeholder="What have you decided? What's next?" value={p.notes} onsave={(text) => updateProject(projectId, { notes: text })} />
 
-        {#if names.length}
+        {#if names.value.length}
           <section>
             <h2 class="rail-title">Mentioned across this project</h2>
-            <p class="names">{names.join(' · ')}</p>
+            <p class="names">{names.value.join(' · ')}</p>
           </section>
         {/if}
       </aside>
@@ -382,10 +359,6 @@
     font-size: var(--text-sm);
     font-weight: 600;
     color: var(--text-2);
-  }
-  .saved {
-    font-weight: 500;
-    color: var(--text-3);
   }
   .add-question {
     display: flex;

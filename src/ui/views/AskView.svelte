@@ -3,30 +3,24 @@
   import ArrowUp from '@lucide/svelte/icons/arrow-up';
   import MessageCircle from '@lucide/svelte/icons/message-circle';
   import { db } from '@/lib/db/schema';
-  import { modelLabel } from '@/lib/library/ai-label';
-  import { ask, type AnswerSegment, type AskTurn } from '@/lib/search/ask';
-  import Markdown from '@/ui/components/Markdown.svelte';
+  import { projectPageCounts, tagCounts } from '@/lib/library/documents';
+  import { projectDocIds } from '@/lib/library/projects';
+  import { ask, type AskTurn } from '@/lib/search/ask';
+  import AnswerTurn from '@/ui/components/AnswerTurn.svelte';
   import Banner from '@/ui/kit/Banner.svelte';
   import Button from '@/ui/kit/Button.svelte';
-  import Citation from '@/ui/kit/Citation.svelte';
   import EmptyState from '@/ui/kit/EmptyState.svelte';
   import IconButton from '@/ui/kit/IconButton.svelte';
-  import Inference from '@/ui/kit/Inference.svelte';
   import Select from '@/ui/kit/Select.svelte';
-  import SourceCard from '@/ui/kit/SourceCard.svelte';
   import Spinner from '@/ui/kit/Spinner.svelte';
   import { live } from '@/ui/live.svelte';
-  import { docHref, router } from '@/ui/router.svelte';
+  import { router } from '@/ui/router.svelte';
 
-  const tags = live(async () => {
-    const counts = new Map<string, number>();
-    for (const d of await db.documents.toArray()) for (const t of d.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
-    return [...counts].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [] as [string, number][]);
+  const tags = live(async () => [...(await tagCounts())].sort((a, b) => a[0].localeCompare(b[0])), [] as [string, number][]);
   const total = live(() => db.documents.count(), 0);
   const projects = live(async () => {
-    const list = await db.projects.orderBy('name').toArray();
-    return Promise.all(list.map(async (p) => ({ id: p.id, name: p.name, count: await db.documents.where('projectIds').equals(p.id).count() })));
+    const [list, counts] = await Promise.all([db.projects.orderBy('name').toArray(), projectPageCounts()]);
+    return list.map((p) => ({ id: p.id, name: p.name, count: counts.get(p.id) ?? 0 }));
   }, [] as { id: string; name: string; count: number }[]);
 
   let question = $state('');
@@ -35,20 +29,8 @@
   let turns = $state<AskTurn[]>([]);
   let pending = $state<string | null>(null);
   let error = $state('');
-  let activeSource = $state<string | null>(null);
   let thread = $state<HTMLElement>();
   let input = $state<HTMLTextAreaElement>();
-
-  /** Merge consecutive inference segments so the AI's own reasoning appears as one box. */
-  function blocks(segments: AnswerSegment[]): AnswerSegment[] {
-    const out: AnswerSegment[] = [];
-    for (const s of segments) {
-      const last = out.at(-1);
-      if (s.kind === 'inference' && last?.kind === 'inference') last.text = `${last.text}\n\n${s.text}`;
-      else out.push({ ...s });
-    }
-    return out;
-  }
 
   const scopeLabel = (tag: string, count: number) => `${tag} · ${count} page${count === 1 ? '' : 's'}`;
 
@@ -65,7 +47,7 @@
         kind === 'tag'
           ? new Set(await db.documents.where('tags').equals(value!).primaryKeys())
           : kind === 'project'
-            ? new Set(await db.documents.where('projectIds').equals(value!).primaryKeys())
+            ? new Set(await projectDocIds(value!))
             : undefined;
       turns = [...turns, await ask(q, turns, docIds)];
     } catch (e) {
@@ -116,41 +98,7 @@
 
       {#each turns as turn, t (t)}
         <div class="question"><p>{turn.question}</p></div>
-        <div class="answer">
-          {#each blocks(turn.segments) as segment, s (s)}
-            {#if segment.kind === 'inference'}
-              <Inference><Markdown source={segment.text} size="compact" /></Inference>
-            {:else}
-              <div class="paragraph">
-                <Markdown source={segment.text} size="compact" />
-                <span class="cites">
-                  {#each segment.sources as n (n)}
-                    <Citation {n} active={activeSource === `${t}:${n}`} onclick={() => (activeSource = activeSource === `${t}:${n}` ? null : `${t}:${n}`)} />
-                  {/each}
-                </span>
-              </div>
-            {/if}
-          {/each}
-
-          {#if turn.sources.length}
-            <div class="sources">
-              {#each turn.sources as hit, i (hit.chunk.id)}
-                <SourceCard
-                  n={i + 1}
-                  title={hit.doc.title}
-                  site={hit.doc.siteName || new URL(hit.doc.url).hostname}
-                  href={docHref(hit.doc.id, { start: hit.chunk.charStart, end: hit.chunk.charEnd })}
-                  active={activeSource === `${t}:${i + 1}`}
-                />
-              {/each}
-            </div>
-            <p class="meta">
-              {turn.mode === 'hybrid' ? 'Matched by keyword and meaning' : 'Matched by keyword'} · {modelLabel(turn.model)}
-            </p>
-          {:else}
-            <p class="meta">No saved pages matched this question.</p>
-          {/if}
-        </div>
+        <AnswerTurn {turn} />
       {/each}
 
       {#if pending}
@@ -233,35 +181,6 @@
     background: var(--surface);
     font-size: var(--text-base);
     line-height: 1.5;
-  }
-  .answer {
-    display: grid;
-    gap: 14px;
-  }
-  .paragraph {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  .paragraph :global(.markdown) {
-    flex: 1;
-    font-size: 15px;
-    line-height: 1.65;
-  }
-  .cites {
-    display: flex;
-    gap: 4px;
-    padding-top: 4px;
-  }
-  .sources {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    gap: 8px;
-  }
-  .meta {
-    margin: 0;
-    font-size: var(--text-xs);
-    color: var(--text-3);
   }
   .thinking {
     display: flex;

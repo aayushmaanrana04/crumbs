@@ -12,19 +12,19 @@
   import { rpc } from '@/lib/rpc/client';
   import { aiStatuses } from '@/ui/ai-status.svelte';
   import AiStatus from '@/ui/components/AiStatus.svelte';
+  import NotesField from '@/ui/components/NotesField.svelte';
   import DocInsights from '@/ui/components/DocInsights.svelte';
   import DocProjects from '@/ui/components/DocProjects.svelte';
   import Markdown from '@/ui/components/Markdown.svelte';
   import TagEditor from '@/ui/components/TagEditor.svelte';
   import { findPassage } from '@/ui/find-text';
-  import { formatDate, formatRelative, readingMinutes, TYPE_LABELS } from '@/ui/format';
+  import { formatDate, formatRelative, readingMinutes, TYPE_LABELS, siteLabel } from '@/ui/format';
   import Button from '@/ui/kit/Button.svelte';
   import EmptyState from '@/ui/kit/EmptyState.svelte';
   import HighlightCard from '@/ui/kit/HighlightCard.svelte';
   import Menu from '@/ui/kit/Menu.svelte';
   import Property from '@/ui/kit/Property.svelte';
   import Segmented from '@/ui/kit/Segmented.svelte';
-  import TextArea from '@/ui/kit/TextArea.svelte';
   import { live } from '@/ui/live.svelte';
 
   let { docId, passage }: { docId: string; passage?: { start: number; end: number } } = $props();
@@ -37,8 +37,6 @@
   const status = $derived(ai.get(docId));
 
   let tab = $state<'overview' | 'text'>('overview');
-  let notesDraft = $state<string | null>(null);
-  let notesSaved = $state(false);
   let copied = $state(false);
   let reader = $state<HTMLElement>();
 
@@ -66,13 +64,6 @@
       names: (insight.value?.entities ?? []).filter((e) => e.type === g.type).map((e) => e.name),
     })).filter((g) => g.names.length > 0),
   );
-
-  async function saveNotes() {
-    if (notesDraft === null || notesDraft === doc.value?.userNotes) return;
-    await updateDocument(docId, { userNotes: notesDraft });
-    notesSaved = true;
-    setTimeout(() => (notesSaved = false), 1500);
-  }
 
   async function remove() {
     if (!doc.value || !confirm(`Delete “${doc.value.title}” from your library?`)) return;
@@ -126,7 +117,7 @@
     <div class="layout">
       <article class="main">
         <header class="head">
-          <span class="site">{d.siteName || new URL(d.url).hostname}</span>
+          <span class="site">{siteLabel(d)}</span>
           <h1>{d.title}</h1>
           <div class="props">
             <Property label="Saved" value="{formatRelative(d.capturedAt)}{d.source === 'auto' ? ' (auto)' : ''}" />
@@ -206,16 +197,7 @@
           </section>
         {/if}
 
-        <section>
-          <h2 class="rail-title">Notes {#if notesSaved}<span class="saved">Saved</span>{/if}</h2>
-          <TextArea
-            rows={4}
-            placeholder="Add your notes…"
-            value={notesDraft ?? d.userNotes}
-            oninput={(e) => (notesDraft = e.currentTarget.value)}
-            onblur={saveNotes}
-          />
-        </section>
+        <NotesField label="Notes" placeholder="Add your notes…" value={d.userNotes} onsave={(text) => updateDocument(docId, { userNotes: text })} />
       </aside>
     </div>
   {:else}
@@ -330,10 +312,6 @@
     font-size: var(--text-sm);
     font-weight: 600;
     color: var(--text-2);
-  }
-  .saved {
-    font-weight: 500;
-    color: var(--text-3);
   }
   .entities {
     display: grid;

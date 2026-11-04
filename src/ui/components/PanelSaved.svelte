@@ -4,10 +4,10 @@
   import { aiStatuses } from '@/ui/ai-status.svelte';
   import AiStatus from '@/ui/components/AiStatus.svelte';
   import DocProjects from '@/ui/components/DocProjects.svelte';
+  import NotesField from '@/ui/components/NotesField.svelte';
   import NumberedPoint from '@/ui/kit/NumberedPoint.svelte';
   import HighlightCard from '@/ui/kit/HighlightCard.svelte';
   import SectionHeading from '@/ui/kit/SectionHeading.svelte';
-  import TextArea from '@/ui/kit/TextArea.svelte';
   import { live } from '@/ui/live.svelte';
 
   // The side panel for a page that's already in the library: status, gist, key points, projects, highlights, notes.
@@ -18,16 +18,6 @@
   const highlights = live(() => db.highlights.where('docId').equals(docId).sortBy('createdAt'), []);
   const ai = aiStatuses();
   const insight = $derived(stored.value ? normalizeInsight(stored.value) : undefined);
-
-  let notesDraft = $state<string | null>(null);
-  let notesSaved = $state(false);
-
-  async function saveNotes() {
-    if (notesDraft === null || notesDraft === doc.value?.userNotes) return;
-    await updateDocument(docId, { userNotes: notesDraft });
-    notesSaved = true;
-    setTimeout(() => (notesSaved = false), 1500);
-  }
 </script>
 
 <div class="saved">
@@ -60,16 +50,7 @@
   {/if}
 
   {#if doc.value}
-    <section>
-      <h2 class="label">Your notes {#if notesSaved}<span class="faint">Saved</span>{/if}</h2>
-      <TextArea
-        rows={3}
-        placeholder="Add a note…"
-        value={notesDraft ?? doc.value.userNotes}
-        oninput={(e) => (notesDraft = e.currentTarget.value)}
-        onblur={saveNotes}
-      />
-    </section>
+    <NotesField label="Your notes" rows={3} placeholder="Add a note…" value={doc.value.userNotes} onsave={(text) => updateDocument(docId, { userNotes: text })} />
   {/if}
 </div>
 
@@ -98,17 +79,5 @@
   .stack {
     display: grid;
     gap: 8px;
-  }
-  .label {
-    display: flex;
-    gap: 8px;
-    margin: 0;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--text-2);
-  }
-  .faint {
-    font-weight: 500;
-    color: var(--text-3);
   }
 </style>

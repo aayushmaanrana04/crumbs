@@ -49,19 +49,8 @@ export interface Embedding {
 }
 
 /** What kind of page this is; decides which blocks the summary uses. */
-export type PageKind =
-  | 'docs'
-  | 'tutorial'
-  | 'repo'
-  | 'data'
-  | 'research'
-  | 'comparison'
-  | 'release'
-  | 'pricing'
-  | 'discussion'
-  | 'news'
-  | 'opinion'
-  | 'other';
+export const PAGE_KINDS = ['docs', 'tutorial', 'repo', 'data', 'research', 'comparison', 'release', 'pricing', 'discussion', 'news', 'opinion', 'other'] as const;
+export type PageKind = (typeof PAGE_KINDS)[number];
 
 /** One structured part of a summary. Unused fields are empty so the shape works with strict JSON schemas. */
 export type InsightBlock =
@@ -216,13 +205,6 @@ export interface UsageRecord {
   error?: string;
 }
 
-export interface LibraryStats {
-  documents: number;
-  highlights: number;
-  projects: number;
-  pendingJobs: number;
-}
-
 export class KnowledgeDB extends Dexie {
   documents!: EntityTable<KnowledgeDocument, 'id'>;
   chunks!: EntityTable<Chunk, 'id'>;
@@ -286,18 +268,3 @@ export class KnowledgeDB extends Dexie {
 }
 
 export const db = new KnowledgeDB();
-
-/** Counts for the library. Only jobs of `activeJobTypes` (tasks with a model set up) count as pending. */
-export async function getLibraryStats(activeJobTypes: JobType[]): Promise<LibraryStats> {
-  const [documents, highlights, projects, pendingJobs] = await Promise.all([
-    db.documents.count(),
-    db.highlights.count(),
-    db.projects.count(),
-    db.jobs
-      .where('status')
-      .anyOf('queued', 'running')
-      .filter((j) => activeJobTypes.includes(j.type))
-      .count(),
-  ]);
-  return { documents, highlights, projects, pendingJobs };
-}

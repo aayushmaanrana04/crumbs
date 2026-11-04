@@ -1,3 +1,5 @@
+import { hostnameOf } from '@/lib/capture/url';
+
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 const timeFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const monthFormat = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
@@ -41,3 +43,6 @@ export const TYPE_LABELS = {
   selection: 'Highlight',
   other: 'Page',
 } as const;
+
+/** The site a saved page came from: its name, or its hostname. */
+export const siteLabel = (page: { siteName?: string; url: string }) => page.siteName || hostnameOf(page.url);

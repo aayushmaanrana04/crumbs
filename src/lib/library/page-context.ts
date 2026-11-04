@@ -3,7 +3,7 @@
 import { canonicalizeUrl, hostnameOf } from '../capture/url';
 import { db, type KnowledgeDocument } from '../db/schema';
 import { groupByDocument, searchPassages } from '../search/search';
-import { findRelated } from './related';
+import { findRelated, type RelatedDocument } from './related';
 
 export interface PageInfo {
   url: string;
@@ -12,21 +12,17 @@ export interface PageInfo {
   lead?: string;
 }
 
-export interface RelatedPage {
-  doc: KnowledgeDocument;
-  why: string;
-}
-
 export interface PageContext {
   saved?: KnowledgeDocument;
-  related: RelatedPage[];
+  related: RelatedDocument[];
+  /** Your notes on the related pages (the saved page's own notes are shown with it). */
   notes: { doc: KnowledgeDocument; text: string }[];
 }
 
 const MAX_RELATED = 5;
 const QUERY_WORDS = 60;
 
-export async function findSavedPage(url: string): Promise<KnowledgeDocument | undefined> {
+async function findSavedPage(url: string): Promise<KnowledgeDocument | undefined> {
   try {
     return await db.documents.where('canonicalUrl').equals(canonicalizeUrl(url)).first();
   } catch {
@@ -42,7 +38,7 @@ function keywordReason(terms: string[]): string | null {
 
 export async function pageContext(page: PageInfo): Promise<PageContext> {
   const saved = await findSavedPage(page.url);
-  const related = new Map<string, RelatedPage>();
+  const related = new Map<string, RelatedDocument>();
 
   // Saved pages: connections through shared names and tags come first.
   if (saved) for (const r of await findRelated(saved.id, MAX_RELATED)) related.set(r.doc.id, r);
@@ -61,15 +57,19 @@ export async function pageContext(page: PageInfo): Promise<PageContext> {
   // Other pages from the same site fill any remaining space.
   const host = hostnameOf(page.url);
   if (host && related.size < MAX_RELATED) {
-    const sameSite = (await db.documents.toArray())
+    const sameSite = await db.documents
+      .orderBy('capturedAt')
+      .reverse()
       .filter((d) => d.id !== saved?.id && !related.has(d.id) && hostnameOf(d.url) === host)
-      .sort((a, b) => b.capturedAt - a.capturedAt);
-    for (const doc of sameSite.slice(0, MAX_RELATED - related.size)) related.set(doc.id, { doc, why: 'Same site' });
+      .limit(MAX_RELATED - related.size)
+      .toArray();
+    for (const doc of sameSite) related.set(doc.id, { doc, why: 'Same site' });
   }
 
   const list = [...related.values()];
-  const notes = [saved, ...list.map((r) => r.doc)]
-    .filter((d): d is KnowledgeDocument => !!d && !!d.userNotes.trim())
+  const notes = list
+    .map((r) => r.doc)
+    .filter((d) => !!d.userNotes.trim())
     .map((doc) => ({ doc, text: doc.userNotes.trim() }));
   return { saved, related: list, notes };
 }

@@ -2,6 +2,7 @@
 import { z } from 'zod';
 import { toJsonSchema } from '../ai/json';
 import { UNTRUSTED_CONTENT_RULE, wrapSource } from '../ai/prompts';
+import { canonicalizeUrl, hostnameOf } from '../capture/url';
 import { rpc } from '../rpc/client';
 import { searchPassages, type PassageHit } from './search';
 
@@ -67,7 +68,7 @@ function extraHit(extra: ExtraSource): PassageHit {
   const text = extra.text.slice(0, EXTRA_SOURCE_CHARS);
   return {
     doc: {
-      id: '', url: extra.url, canonicalUrl: '', title: extra.title, siteName: new URL(extra.url).hostname, capturedAt: 0, updatedAt: 0,
+      id: '', url: extra.url, canonicalUrl: '', title: extra.title, siteName: hostnameOf(extra.url), capturedAt: 0, updatedAt: 0,
       type: 'other', markdown: text, contentHash: '', simhash: '', excerpt: '', source: 'manual', userNotes: '', tags: [], projectIds: [],
     },
     chunk: { id: 'extra', docId: '', ordinal: 0, text, charStart: 0, charEnd: text.length },
@@ -83,7 +84,8 @@ export async function ask(question: string, history: AskTurn[], docIds?: Set<str
   const found = await searchPassages(retrievalQuery, { limit: extra ? PASSAGES - 1 : PASSAGES, docIds });
   const mode = found.mode;
   // The extra page goes first (source 1); drop its saved copy if retrieval also found it.
-  const hits = extra ? [extraHit(extra), ...found.hits.filter((h) => h.doc.url !== extra.url)] : found.hits;
+  const extraUrl = extra && canonicalizeUrl(extra.url);
+  const hits = extra ? [extraHit(extra), ...found.hits.filter((h) => h.doc.canonicalUrl !== extraUrl)] : found.hits;
 
   const sources = hits.map((hit, i) => wrapSource(i + 1, hit.doc.title, hit.chunk.text)).join('\n\n');
   const conversation = history

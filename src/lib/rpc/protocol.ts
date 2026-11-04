@@ -1,6 +1,5 @@
 import type { SaveOutcome } from '../capture/save';
 import type { PagePreview } from '../capture/tab';
-import type { LibraryStats } from '../db/schema';
 import type { CompletionRequest, CompletionResult, ModelInfo, ProviderKind } from '../providers/types';
 import type { TaskName } from '../settings/tasks';
 
@@ -10,7 +9,6 @@ export interface RpcMethods {
   'ai.complete': { args: { kind: ProviderKind; request: CompletionRequest }; result: CompletionResult };
   'ai.runTask': { args: { task: Exclude<TaskName, 'embed'>; request: CompletionRequest }; result: CompletionResult };
   'ai.embedQuery': { args: { text: string }; result: { space: string; vector: number[] } };
-  'capture.activeTab': { args: Record<string, never>; result: SaveOutcome };
   'capture.tab': { args: { tabId: number }; result: SaveOutcome };
   /** Read a tab for the side panel without saving it; null when it can't be read. */
   'capture.preview': { args: { tabId: number }; result: PagePreview | null };
@@ -19,7 +17,6 @@ export interface RpcMethods {
   'jobs.run': { args: Record<string, never>; result: void };
   'jobs.retryFailed': { args: Record<string, never>; result: number };
   'jobs.reprocess': { args: { docId: string }; result: void };
-  'library.stats': { args: Record<string, never>; result: LibraryStats };
 }
 
 export type RpcMethod = keyof RpcMethods;

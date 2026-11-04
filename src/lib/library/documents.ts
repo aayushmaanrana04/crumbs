@@ -44,3 +44,15 @@ export async function updateDocument(
 export function normalizeTag(tag: string): string {
   return tag.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 40);
 }
+
+/** How many pages carry each value of a multi-entry index. Reads index keys only, not page bodies. */
+async function countKeys(index: 'tags' | 'projectIds'): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  for (const k of (await db.documents.orderBy(index).keys()) as string[]) counts.set(k, (counts.get(k) ?? 0) + 1);
+  return counts;
+}
+
+/** Pages per tag. */
+export const tagCounts = () => countKeys('tags');
+/** Pages per project id. */
+export const projectPageCounts = () => countKeys('projectIds');

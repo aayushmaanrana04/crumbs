@@ -4,7 +4,7 @@
   import { aiStatuses } from '@/ui/ai-status.svelte';
   import AiStatus from '@/ui/components/AiStatus.svelte';
   import DocInsights from '@/ui/components/DocInsights.svelte';
-  import { formatRelative, readingMinutes, TYPE_LABELS } from '@/ui/format';
+  import { formatRelative, readingMinutes, TYPE_LABELS, siteLabel } from '@/ui/format';
   import Button from '@/ui/kit/Button.svelte';
   import HighlightCard from '@/ui/kit/HighlightCard.svelte';
   import Property from '@/ui/kit/Property.svelte';
@@ -22,7 +22,7 @@
 </script>
 
 <div class="toolbar">
-  <span class="site">{doc.siteName || new URL(doc.url).hostname}</span>
+  <span class="site">{siteLabel(doc)}</span>
   <div class="actions">
     <Button onclick={() => (location.hash = docHref(doc.id))}>Open page</Button>
     <Button kind="primary" href={doc.url}>Original <ArrowUpRight /></Button>

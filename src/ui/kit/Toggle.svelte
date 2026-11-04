@@ -1,6 +1,7 @@
 <script lang="ts">
+  // Controlled: shows `checked` and asks for the change through `onchange`, so a refused change never shows as applied.
   let {
-    checked = $bindable(false),
+    checked = false,
     label,
     disabled = false,
     onchange,
@@ -14,10 +15,7 @@
   aria-checked={checked}
   aria-label={label}
   {disabled}
-  onclick={() => {
-    checked = !checked;
-    onchange?.(checked);
-  }}><span class="knob"></span></button
+  onclick={() => onchange?.(!checked)}><span class="knob"></span></button
 >
 
 <style>

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { db, normalizeInsight, type DocumentType, type Insight } from '../db/schema';
-import { normalizeTag } from '../library/documents';
+import { db, normalizeInsight, PAGE_KINDS, type DocumentType, type Insight } from '../db/schema';
+import { normalizeTag, tagCounts } from '../library/documents';
 import { estimateTokens, splitIntoChunks } from '../text/chunking';
 import { gistProblems, refineInsight, type GistProblem, type RefinedInsight } from './insight-quality';
 import { toJsonSchema } from './json';
@@ -8,7 +8,6 @@ import { UNTRUSTED_CONTENT_RULE, wrapDocument } from './prompts';
 import { runTask } from './run';
 
 const ENTITY_TYPES = ['person', 'company', 'product', 'technology', 'project'] as const;
-const PAGE_KINDS = ['docs', 'tutorial', 'repo', 'data', 'research', 'comparison', 'release', 'pricing', 'discussion', 'news', 'opinion', 'other'] as const;
 const BLOCK_TYPES = ['steps', 'table', 'chart', 'list', 'code', 'quote', 'callout'] as const;
 
 // Blocks are flat (every field present, unused ones empty) so the schema works in strict mode on every provider.
@@ -84,11 +83,10 @@ const EXISTING_TAGS_LIMIT = 60;
 
 /** The library's most-used tags, so new pages reuse them instead of inventing near-duplicates. */
 async function existingTags(excludeDocId: string): Promise<string[]> {
-  const counts = new Map<string, number>();
-  await db.documents.each((d) => {
-    if (d.id !== excludeDocId) for (const t of d.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
-  });
-  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, EXISTING_TAGS_LIMIT).map(([t]) => t);
+  const [counts, own] = await Promise.all([tagCounts(), db.documents.get(excludeDocId)]);
+  for (const t of own?.tags ?? []) counts.set(t, counts.get(t)! - 1);
+  return [...counts]
+    .filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).slice(0, EXISTING_TAGS_LIMIT).map(([t]) => t);
 }
 
 function context(type: DocumentType, tags: string[]): string {
@@ -164,7 +162,15 @@ export async function generateInsights(docId: string): Promise<void> {
   });
 }
 
-/** Queue re-summarising for pages whose summary predates the current format. */
+/**
+ * Pages whose summary predates the current format. Pages whose re-summarise already failed are left
+ * for the user to retry, so a failing page doesn't cost a model call on every service-worker start.
+ */
 export async function outdatedInsightDocIds(): Promise<string[]> {
-  return (await db.insights.toArray()).filter((i) => i.version !== 2).map((i) => i.docId);
+  const [outdated, failed] = await Promise.all([
+    db.insights.filter((i) => i.version !== 2).primaryKeys(),
+    db.jobs.where('status').equals('failed').filter((j) => j.type === 'insights').toArray(),
+  ]);
+  const skip = new Set(failed.map((j) => j.docId));
+  return (outdated as string[]).filter((id) => !skip.has(id));
 }

@@ -1,41 +1,36 @@
 <script lang="ts">
   import { browser } from '#imports';
   import ArrowUp from '@lucide/svelte/icons/arrow-up';
-  import ExternalLink from '@lucide/svelte/icons/external-link';
   import Library from '@lucide/svelte/icons/library';
   import { describeOutcome } from '@/lib/capture/describe';
-  import type { PagePreview } from '@/lib/capture/tab';
   import { hostnameOf, isCapturableUrl } from '@/lib/capture/url';
-  import { pageContext, type PageContext } from '@/lib/library/page-context';
-  import { modelLabel } from '@/lib/library/ai-label';
+  import { pageContext, type PageContext, type PageInfo } from '@/lib/library/page-context';
   import { rpc } from '@/lib/rpc/client';
   import { ask, type AskTurn } from '@/lib/search/ask';
   import { normalizeSite, siteMatches } from '@/lib/settings/capture';
-  import { panelSettings } from '@/lib/settings/panel';
-  import Markdown from '@/ui/components/Markdown.svelte';
+  import { isPaused, panelSettings } from '@/lib/settings/panel';
+  import AnswerTurn from '@/ui/components/AnswerTurn.svelte';
   import PanelSaved from '@/ui/components/PanelSaved.svelte';
+  import { siteLabel } from '@/ui/format';
   import Banner from '@/ui/kit/Banner.svelte';
   import Button from '@/ui/kit/Button.svelte';
-  import Citation from '@/ui/kit/Citation.svelte';
   import EmptyState from '@/ui/kit/EmptyState.svelte';
   import IconButton from '@/ui/kit/IconButton.svelte';
-  import Inference from '@/ui/kit/Inference.svelte';
   import RelatedCard from '@/ui/kit/RelatedCard.svelte';
   import SectionHeading from '@/ui/kit/SectionHeading.svelte';
-  import SourceCard from '@/ui/kit/SourceCard.svelte';
   import Spinner from '@/ui/kit/Spinner.svelte';
+  import SettingsRow from '@/ui/kit/SettingsRow.svelte';
   import Toggle from '@/ui/kit/Toggle.svelte';
   import { docHref } from '@/ui/router.svelte';
   import { stored } from '@/ui/storage.svelte';
 
-  type Page = { url: string; title: string; siteName?: string; lead?: string };
+  type Page = PageInfo & { siteName?: string };
   type View =
     | { state: 'loading' }
     | { state: 'unreadable'; url?: string } // a browser page, a blocked site, or no access yet
     | { state: 'ready'; page: Page; context: PageContext };
 
   const settings = stored(panelSettings);
-  const APP_URL = browser.runtime.getURL('/app.html');
 
   let tabId = $state<number | null>(null);
   /** A tab you switched to while follow mode is off. */
@@ -50,7 +45,7 @@
 
   const follow = $derived(settings.value?.follow ?? false);
   const host = $derived(view.state === 'ready' ? hostnameOf(view.page.url) : '');
-  const paused = $derived(!!host && (settings.value?.pausedSites ?? []).some((s) => siteMatches(host, s)));
+  const paused = $derived(view.state === 'ready' && !!settings.value && isPaused(view.page.url, settings.value));
 
   async function show(id: number) {
     tabId = id;
@@ -59,8 +54,7 @@
     message = '';
     answer = null;
     askError = '';
-    const preview: PagePreview | null = await rpc('capture.preview', { tabId: id }).catch(() => null);
-    let page: Page | null = preview;
+    let page: Page | null = await rpc('capture.preview', { tabId: id }).catch(() => null);
     if (!page) {
       // No access to the page itself; follow mode can still see its address and title.
       const tab = await browser.tabs.get(id).catch(() => undefined);
@@ -92,7 +86,7 @@
       }
       // Follow mode keeps up with the active tab, except on paused sites.
       const tab = follow ? await browser.tabs.get(id).catch(() => undefined) : undefined;
-      const pausedHere = !!tab?.url && (settings.value?.pausedSites ?? []).some((s) => siteMatches(hostnameOf(tab.url!), s));
+      const pausedHere = !!tab?.url && !!settings.value && isPaused(tab.url, settings.value);
       if (follow && !pausedHere) void show(id);
       else switchedTo = id;
     };
@@ -129,13 +123,8 @@
     }
   }
 
-  let toggles = $state(0);
-
   async function setFollow(on: boolean) {
-    if (on && !(await browser.permissions.request({ permissions: ['tabs'] }).catch(() => false))) {
-      toggles++;
-      return;
-    }
+    if (on && !(await browser.permissions.request({ permissions: ['tabs'] }).catch(() => false))) return;
     const current = await panelSettings.getValue();
     await panelSettings.setValue({ ...current, follow: on });
     if (on && switchedTo !== null) await show(switchedTo);
@@ -167,21 +156,12 @@
     }
   }
 
-  /** Library links ("#/doc/…") open in the full app, not inside the narrow panel. */
-  function openLinksInApp(e: MouseEvent) {
-    const a = (e.target as HTMLElement).closest('a');
-    const href = a?.getAttribute('href');
-    if (!href?.startsWith('#/')) return;
-    e.preventDefault();
-    void browser.tabs.create({ url: `${APP_URL}${href}` });
-  }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="panel" onclick={openLinksInApp}>
+<div class="panel">
   <header class="head">
     <span class="brand">Summaryse</span>
-    <IconButton label="Open library" onclick={() => browser.tabs.create({ url: `${APP_URL}#/library` })}><Library size={16} /></IconButton>
+    <a class="library" href="#/library" aria-label="Open library" title="Open library"><Library size={16} /></a>
   </header>
 
   {#if switchedTo !== null}
@@ -214,15 +194,13 @@
     {:else}
       {@const { page, context } = view}
       <section class="page">
-        <p class="site">{page.siteName || hostnameOf(page.url)}</p>
+        <p class="site">{siteLabel(page)}</p>
         <h1 class="title">{page.title || page.url}</h1>
       </section>
 
       {#if context.saved}
         {#key context.saved.id}<PanelSaved docId={context.saved.id} />{/key}
-        <Button full onclick={() => browser.tabs.create({ url: `${APP_URL}${docHref(context.saved!.id)}` })}>
-          <ExternalLink size={14} /> Open full summary
-        </Button>
+        <Button full href={docHref(context.saved.id)}>Open full summary</Button>
       {:else}
         <div class="save">
           <Button kind="primary" full disabled={saving} onclick={save}>{saving ? 'Saving…' : 'Save page'}</Button>
@@ -239,12 +217,10 @@
         <EmptyState title="Nothing related yet">Pages you save that share names, tags or words with this one will show up here.</EmptyState>
       {/if}
 
-      {#if context.notes.filter((n) => n.doc.id !== context.saved?.id).length}
+      {#if context.notes.length}
         <section class="group">
           <SectionHeading label="Your notes" />
-          {#each context.notes.filter((n) => n.doc.id !== context.saved?.id) as n (n.doc.id)}
-            <a class="note" href={docHref(n.doc.id)}><span>{n.text}</span><span class="note-from">{n.doc.title}</span></a>
-          {/each}
+          {#each context.notes as n (n.doc.id)}<RelatedCard title={n.text} why={n.doc.title} href={docHref(n.doc.id)} />{/each}
         </section>
       {/if}
 
@@ -256,47 +232,20 @@
         </form>
         {#if asking}<div class="loading"><Spinner /> Reading your sources…</div>{/if}
         {#if askError}<Banner tone="error" title="Couldn't answer">{askError}</Banner>{/if}
-        {#if answer}
-          <div class="answer">
-            {#each answer.segments as segment, s (s)}
-              {#if segment.kind === 'inference'}
-                <Inference><Markdown source={segment.text} size="compact" /></Inference>
-              {:else}
-                <div>
-                  <Markdown source={segment.text} size="compact" />
-                  {#each segment.sources as n (n)}<Citation {n} />{/each}
-                </div>
-              {/if}
-            {/each}
-            {#each answer.sources as hit, i (hit.chunk.id)}
-              <SourceCard
-                n={i + 1}
-                title={hit.doc.id ? hit.doc.title : `${hit.doc.title} (this page)`}
-                site={hit.doc.siteName || hostnameOf(hit.doc.url)}
-                href={hit.doc.id ? docHref(hit.doc.id, { start: hit.chunk.charStart, end: hit.chunk.charEnd }) : hit.doc.url}
-              />
-            {/each}
-            <p class="hint">{modelLabel(answer.model)}</p>
-          </div>
-        {/if}
+        {#if answer}<AnswerTurn turn={answer} compact />{/if}
       </section>
     {/if}
   </main>
 
   <footer class="foot">
-    <!-- Re-keyed after each change so a declined permission prompt flips the switch back. -->
-    {#key toggles}
-      <div class="foot-row">
-        <span>Follow my browsing<small>Update the panel as you switch tabs</small></span>
-        <Toggle label="Follow my browsing" checked={follow} onchange={setFollow} />
-      </div>
-      {#if follow && host}
-        <div class="foot-row">
-          <span>Pause on {normalizeSite(host)}</span>
-          <Toggle label="Pause on {normalizeSite(host)}" checked={paused} onchange={setPaused} />
-        </div>
-      {/if}
-    {/key}
+    <SettingsRow title="Follow my browsing" detail="Update the panel as you switch tabs">
+      {#snippet control()}<Toggle label="Follow my browsing" checked={follow} onchange={setFollow} />{/snippet}
+    </SettingsRow>
+    {#if follow && host}
+      <SettingsRow title="Pause on {normalizeSite(host)}">
+        {#snippet control()}<Toggle label="Pause on {normalizeSite(host)}" checked={paused} onchange={setPaused} />{/snippet}
+      </SettingsRow>
+    {/if}
   </footer>
 </div>
 
@@ -373,26 +322,6 @@
     display: grid;
     gap: 6px;
   }
-  .note {
-    display: grid;
-    gap: 2px;
-    padding: 10px 12px;
-    border-radius: var(--r-md);
-    background: var(--surface);
-    font-size: var(--text-md);
-    color: inherit;
-    text-decoration: none;
-  }
-  .note:hover {
-    background: var(--hover);
-  }
-  .note-from {
-    font-size: var(--text-sm);
-    color: var(--text-3);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
   .composer {
     display: flex;
     align-items: center;
@@ -411,29 +340,17 @@
   .composer input:focus {
     outline: none;
   }
-  .answer {
-    display: grid;
-    gap: 10px;
-  }
   .foot {
-    display: grid;
-    gap: 10px;
-    padding: 12px 16px;
+    padding: 4px 0;
     border-top: 1px solid var(--border);
   }
-  .foot-row {
+  .library {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: var(--text-md);
+    padding: 6px;
+    border-radius: var(--r-sm);
+    color: var(--text-2);
   }
-  .foot-row span {
-    display: grid;
-    gap: 1px;
-  }
-  .foot-row small {
-    font-size: var(--text-sm);
-    color: var(--text-3);
+  .library:hover {
+    background: var(--hover);
   }
 </style>

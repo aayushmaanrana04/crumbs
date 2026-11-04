@@ -1,6 +1,5 @@
 import { browser, defineBackground } from '#imports';
 import {
-  activeJobTypes,
   drainQueue,
   recoverInterruptedJobs,
   retryFailedJobs,
@@ -9,11 +8,10 @@ import {
 import { outdatedInsightDocIds } from '@/lib/ai/insights';
 import { embedTexts, runTask } from '@/lib/ai/run';
 import { captureTab, describeOutcome, previewTab, showToast, syncAutoCaptureScripts } from '@/lib/capture/tab';
-import { hostnameOf, isCapturableUrl } from '@/lib/capture/url';
+import { isCapturableUrl } from '@/lib/capture/url';
 import { relatedCount } from '@/lib/library/page-context';
-import { panelSettings } from '@/lib/settings/panel';
-import { siteMatches } from '@/lib/settings/capture';
-import { db, getLibraryStats } from '@/lib/db/schema';
+import { isPaused, panelSettings } from '@/lib/settings/panel';
+import { db } from '@/lib/db/schema';
 import { enqueueJobs } from '@/lib/library/jobs';
 import { PROVIDER_INFO } from '@/lib/providers/catalog';
 import { BACKGROUND_ADAPTERS } from '@/lib/providers/registry';
@@ -29,7 +27,7 @@ function backgroundAdapter(kind: ProviderKind) {
   return adapter;
 }
 
-/** Save a tab from a user action (menu, shortcut, popup) and confirm in the page. */
+/** Save a tab from a user action (menu, shortcut, side panel) and confirm in the page. */
 async function saveFromUserAction(tabId: number, selection?: string) {
   try {
     const outcome = await captureTab(tabId, 'manual', selection);
@@ -48,8 +46,7 @@ async function updateTabBadge(tabId: number) {
   if (!settings.follow || !(await browser.permissions.contains({ permissions: ['tabs'] }))) return;
   const tab = await browser.tabs.get(tabId).catch(() => undefined);
   if (!tab?.url || tab.incognito || !isCapturableUrl(tab.url)) return;
-  const host = hostnameOf(tab.url);
-  if (settings.pausedSites.some((s) => siteMatches(host, s))) {
+  if (isPaused(tab.url, settings)) {
     await browser.action.setBadgeText({ tabId, text: '' });
     return;
   }
@@ -62,8 +59,9 @@ export default defineBackground(() => {
   void browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => undefined);
 
   browser.tabs.onActivated.addListener(({ tabId }) => void updateTabBadge(tabId));
-  browser.tabs.onUpdated.addListener((tabId, change) => {
-    if (change.status === 'complete') void updateTabBadge(tabId);
+  // Background tabs finishing loading don't need a badge until they're switched to.
+  browser.tabs.onUpdated.addListener((tabId, change, tab) => {
+    if (change.status === 'complete' && tab.active) void updateTabBadge(tabId);
   });
 
   browser.runtime.onInstalled.addListener(async ({ reason }) => {
@@ -126,11 +124,6 @@ export default defineBackground(() => {
       const { space, vectors } = await embedTexts([text]);
       return { space, vector: vectors[0]! };
     },
-    async 'capture.activeTab'() {
-      const [tab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
-      if (tab?.id === undefined) throw new Error('No active tab.');
-      return saveFromUserAction(tab.id);
-    },
     async 'capture.tab'({ tabId }) {
       return saveFromUserAction(tabId);
     },
@@ -156,9 +149,6 @@ export default defineBackground(() => {
       await enqueueJobs(docId, ['insights', 'embed']);
       await updateBadge();
       void drainQueue();
-    },
-    async 'library.stats'() {
-      return getLibraryStats(await activeJobTypes());
     },
   });
 });

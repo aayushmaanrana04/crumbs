@@ -9,7 +9,7 @@
   import { aiStatuses } from '@/ui/ai-status.svelte';
   import DocPreview from '@/ui/components/DocPreview.svelte';
   import Passage from '@/ui/components/Passage.svelte';
-  import { dayGroup } from '@/ui/format';
+  import { dayGroup, siteLabel } from '@/ui/format';
   import Banner from '@/ui/kit/Banner.svelte';
   import Button from '@/ui/kit/Button.svelte';
   import EmptyState from '@/ui/kit/EmptyState.svelte';
@@ -175,7 +175,7 @@
             <ListRow
               title={doc.title}
               summary={hits?.get(doc.id) ? undefined : gists.value.get(doc.id)}
-              site={doc.siteName || new URL(doc.url).hostname}
+              site={siteLabel(doc)}
               status={status.label}
               statusTone={status.tone}
               selected={doc.id === selected?.id}

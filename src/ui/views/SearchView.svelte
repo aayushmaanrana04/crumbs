@@ -2,7 +2,7 @@
   import Search from '@lucide/svelte/icons/search';
   import { isSemanticSearchConfigured, searchPassages, type SearchResult } from '@/lib/search/search';
   import Passage from '@/ui/components/Passage.svelte';
-  import { formatRelative } from '@/ui/format';
+  import { formatRelative, siteLabel } from '@/ui/format';
   import Banner from '@/ui/kit/Banner.svelte';
   import EmptyState from '@/ui/kit/EmptyState.svelte';
   import SearchField from '@/ui/kit/SearchField.svelte';
@@ -94,7 +94,7 @@
               <span class="title">{hit.doc.title}</span>
               <Passage text={hit.chunk.text} terms={hit.terms} />
               <span class="meta">
-                {hit.doc.siteName || new URL(hit.doc.url).hostname} · saved {formatRelative(hit.doc.capturedAt).toLowerCase()} · {strength(hit.relevance)}
+                {siteLabel(hit.doc)} · saved {formatRelative(hit.doc.capturedAt).toLowerCase()} · {strength(hit.relevance)}
               </span>
             </a>
           </li>

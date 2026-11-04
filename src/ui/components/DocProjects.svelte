@@ -20,12 +20,7 @@
     return { selected: doc?.projectIds ?? [], projects };
   }, { selected: [] as string[], projects: [] as { id: string; name: string }[] });
 
-  let suggestions = $state<ProjectSuggestion[]>([]);
-  $effect(() => {
-    void data.value.selected.length;
-    void data.value.projects.length;
-    suggestProjectsForDoc(docId).then((s) => (suggestions = s));
-  });
+  const suggestions = live(() => suggestProjectsForDoc(docId), [] as ProjectSuggestion[]);
 
   const inProjects = $derived(data.value.projects.filter((p) => data.value.selected.includes(p.id)));
 </script>
@@ -45,15 +40,12 @@
         }}
       />
   </div>
-  {#each suggestions as s (s.project.id)}
+  {#each suggestions.value as s (s.project.id)}
     <Suggestion
       title="Add to {s.project.name}?"
       why={s.why}
       onadd={() => setDocumentInProject(docId, s.project.id, true)}
-      ondismiss={async () => {
-        await dismissSuggestion(s.project.id, docId);
-        suggestions = suggestions.filter((x) => x.project.id !== s.project.id);
-      }}
+      ondismiss={() => dismissSuggestion(s.project.id, docId)}
     />
   {/each}
 </div>

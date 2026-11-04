@@ -6,17 +6,13 @@
   import NumberedPoint from '@/ui/kit/NumberedPoint.svelte';
   import RelatedCard from '@/ui/kit/RelatedCard.svelte';
   import SectionHeading from '@/ui/kit/SectionHeading.svelte';
+  import { live } from '@/ui/live.svelte';
   import { docHref } from '@/ui/router.svelte';
 
   // The gist, key points, structured blocks and related pages: shared by the Library preview and the page view.
   let { docId, insight }: { docId: string; insight: Insight } = $props();
 
-  let related = $state<RelatedDocument[]>([]);
-
-  $effect(() => {
-    void insight.createdAt;
-    findRelated(docId).then((r) => (related = r));
-  });
+  const related = live(() => findRelated(docId), [] as RelatedDocument[]);
 </script>
 
 <section>
@@ -37,11 +33,11 @@
   <section><InsightBlocks {block} /></section>
 {/each}
 
-{#if related.length}
+{#if related.value.length}
   <section>
     <SectionHeading label="Related in your library" />
     <div class="related">
-      {#each related as r (r.doc.id)}<RelatedCard title={r.doc.title} why={r.why} href={docHref(r.doc.id)} />{/each}
+      {#each related.value as r (r.doc.id)}<RelatedCard title={r.doc.title} why={r.why} href={docHref(r.doc.id)} />{/each}
     </div>
   </section>
 {/if}
