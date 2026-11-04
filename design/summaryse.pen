@@ -8866,6 +8866,199 @@
                           ]
                         }
                       ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "p74xRx",
+                      "name": "OpenRouter sign-in",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "M4Ze7",
+                          "name": "Label",
+                          "fill": "$text-3",
+                          "content": "OpenRouter · sign in instead of pasting a key",
+                          "fontFamily": "$font",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "id": "tTq5t",
+                          "type": "ref",
+                          "ref": "RdxQt",
+                          "name": "ProviderCard · OpenRouter · not connected",
+                          "descendants": {
+                            "YjSpt": {
+                              "content": "O"
+                            },
+                            "rd7qs": {
+                              "content": "OpenRouter"
+                            },
+                            "x9J3c": {
+                              "content": "Not set up"
+                            },
+                            "L2jt6R": {
+                              "enabled": false
+                            },
+                            "eWW9F": {
+                              "enabled": false
+                            },
+                            "zYzTR": {
+                              "type": "frame",
+                              "id": "H2HkwS",
+                              "name": "Actions",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 10,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "W0A1iK",
+                                  "name": "Row",
+                                  "gap": 12,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "id": "B4CGL",
+                                      "type": "ref",
+                                      "ref": "b0NGc",
+                                      "name": "Connect",
+                                      "descendants": {
+                                        "EZJal": {
+                                          "content": "Connect OpenRouter"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "Q9H77p",
+                                      "type": "ref",
+                                      "ref": "Frx6f",
+                                      "name": "Paste instead",
+                                      "descendants": {
+                                        "Hj68G": {
+                                          "content": "Paste a key or code instead",
+                                          "fontWeight": "normal",
+                                          "fill": "$text-2"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "d38cIF",
+                                  "name": "Hint",
+                                  "fill": "$text-3",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "Opens OpenRouter so you can sign in and approve Carrel. Usage is paid from your OpenRouter credit; Carrel never sees your password.",
+                                  "lineHeight": 1.5,
+                                  "fontFamily": "$font",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "id": "O2aFIX",
+                          "type": "ref",
+                          "ref": "RdxQt",
+                          "name": "ProviderCard · OpenRouter · connected",
+                          "descendants": {
+                            "YjSpt": {
+                              "content": "O"
+                            },
+                            "rd7qs": {
+                              "content": "OpenRouter"
+                            },
+                            "x9J3c": {
+                              "content": "Connected to your OpenRouter account · 454 models"
+                            },
+                            "eWW9F": {
+                              "enabled": false
+                            },
+                            "zYzTR": {
+                              "type": "frame",
+                              "id": "gSrgP",
+                              "name": "Actions",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "id": "n3sYi5",
+                                  "type": "ref",
+                                  "ref": "v1EJ3S",
+                                  "name": "Test",
+                                  "descendants": {
+                                    "V4UIa6": {
+                                      "content": "Test connection"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "gzACu",
+                                  "type": "ref",
+                                  "ref": "v1EJ3S",
+                                  "name": "Spending limit",
+                                  "descendants": {
+                                    "V4UIa6": {
+                                      "content": "Set a spending limit ↗"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "tA5Pq",
+                                  "type": "ref",
+                                  "ref": "mdJjT",
+                                  "name": "Disconnect",
+                                  "descendants": {
+                                    "BoM3r": {
+                                      "content": "Disconnect"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "id": "lY3I5",
+                          "type": "ref",
+                          "ref": "RdxQt",
+                          "name": "ProviderCard · OpenRouter · paste a code",
+                          "descendants": {
+                            "YjSpt": {
+                              "content": "O"
+                            },
+                            "rd7qs": {
+                              "content": "OpenRouter"
+                            },
+                            "x9J3c": {
+                              "content": "Waiting for your code"
+                            },
+                            "L2jt6R": {
+                              "enabled": false
+                            },
+                            "eWW9F/m7jQ5": {
+                              "content": "Code from OpenRouter"
+                            },
+                            "eWW9F/kQoEU": {
+                              "content": "Paste the code"
+                            },
+                            "eWW9F/VShJx": {
+                              "content": "Shown by OpenRouter after you approve. Works once, for 10 minutes."
+                            },
+                            "LSZCf/V4UIa6": {
+                              "content": "Use code"
+                            }
+                          }
+                        }
+                      ]
                     }
                   ]
                 },

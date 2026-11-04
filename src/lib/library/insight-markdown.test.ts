@@ -25,7 +25,7 @@ describe('summaries', () => {
       ],
     };
     const md = insightToMarkdown(insight);
-    expect(md).toContain('> Embed the widget.');
+    expect(md).toContain('## Summary\n\n_AI summary by m, 1970-01-01._\n\nEmbed the widget.');
     expect(md).toContain('1. Install\n\n   ```bash\n   npm i acme\n   ```\n2. Start');
     expect(md).toContain('| Name | Meaning |\n| --- | --- |\n| flowtype | 1 = onramp \\| 2 = offramp |');
     expect(md).toContain('> **Warning:** Re-initialise to reopen.');

@@ -2,7 +2,7 @@
   import { db } from '@/lib/db/schema';
   import { PROVIDER_INFO } from '@/lib/providers/catalog';
   import type { ProviderKind } from '@/lib/providers/types';
-  import { usageLimits } from '@/lib/settings/tasks';
+  import { TASKS, usageLimits } from '@/lib/settings/tasks';
   import { formatDateTime } from '@/ui/format';
   import { live } from '@/ui/live.svelte';
   import { stored } from '@/ui/storage.svelte';
@@ -22,10 +22,11 @@
   }, { calls: 0, input: 0, output: 0 });
   const limits = stored(usageLimits);
 
+  const TASK_LABELS: Record<string, string> = Object.fromEntries(TASKS.map((t) => [t.name, t.label]));
   const label = (provider: string) => PROVIDER_INFO[provider as ProviderKind]?.label ?? provider;
 </script>
 
-<SettingsGroup title="AI activity" description="Every call that sent content to an AI provider.">
+<SettingsGroup title="AI activity" description="Every summary, search-indexing and Ask call that sent content to an AI provider.">
   <SettingsRow
     title="Today"
     detail="{today.value.calls} call{today.value.calls === 1 ? '' : 's'} · {today.value.input.toLocaleString()} tokens in · {today.value.output.toLocaleString()} out"
@@ -52,7 +53,7 @@
           {#each recent.value as row (row.id)}
             <tr>
               <td>{formatDateTime(row.at)}</td>
-              <td>{row.task}</td>
+              <td>{TASK_LABELS[row.task] ?? row.task}</td>
               <td>{label(row.provider)}</td>
               <td class="model">{row.model}</td>
               <td>{#if !row.ok}<span class="error-text" title={row.error}>Failed</span>{:else}{row.inputTokens != null ? `${row.inputTokens} / ${row.outputTokens ?? 0}` : '—'}{/if}</td>

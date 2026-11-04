@@ -231,6 +231,9 @@
           <input bind:value={question} placeholder={page.lead ? 'Ask about this page and your library' : 'Ask your library'} aria-label="Question" />
           <IconButton label="Ask" variant="primary" type="submit" disabled={!question.trim() || asking}><ArrowUp size={15} /></IconButton>
         </form>
+        <p class="hint">
+          {page.lead ? "Sends this page's text and matching saved passages to your Ask model." : 'Sends matching saved passages to your Ask model.'}
+        </p>
         {#if asking}<div class="loading"><Spinner /> Reading your sources…</div>{/if}
         {#if askError}<Banner tone="error" title="Couldn't answer">{askError}</Banner>{/if}
         {#if answer}<AnswerTurn turn={answer} compact />{/if}
@@ -239,7 +242,10 @@
   </main>
 
   <footer class="foot">
-    <SettingsRow title="Follow my browsing" detail="Update the panel as you switch tabs">
+    <SettingsRow
+      title="Follow my browsing"
+      detail="Update the panel as you switch tabs. Chrome will ask to let Carrel see tab addresses and titles; they're matched on this device and not saved."
+    >
       {#snippet control()}<Toggle label="Follow my browsing" checked={follow} onchange={setFollow} />{/snippet}
     </SettingsRow>
     {#if follow && host}

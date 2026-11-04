@@ -52,6 +52,10 @@ async function updateTabBadge(tabId: number) {
   }
   const count = await relatedCount({ url: tab.url, title: tab.title ?? '' });
   await browser.action.setBadgeText({ tabId, text: count ? String(count) : '' });
+  await browser.action.setTitle({
+    tabId,
+    title: count ? `Open Carrel · ${count} related page${count === 1 ? '' : 's'} in your library` : 'Open Carrel',
+  });
 }
 
 export default defineBackground(() => {

@@ -9,7 +9,7 @@ export default defineConfig({
     const dev = mode === 'development';
     return {
       name: 'Carrel',
-      description: 'Your personal knowledge, built while you browse.',
+      description: 'Save pages you read, summarised with the AI you choose and stored in your browser.',
       // nativeMessaging is only for the Claude dev bridge and never ships.
       permissions: [
         'storage',

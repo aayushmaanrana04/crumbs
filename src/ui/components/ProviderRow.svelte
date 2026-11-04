@@ -12,6 +12,7 @@
   import Field from '@/ui/kit/Field.svelte';
   import Input from '@/ui/kit/Input.svelte';
   import SettingsRow from '@/ui/kit/SettingsRow.svelte';
+  import ProviderIcon from '@/ui/kit/ProviderIcon.svelte';
   import Spinner from '@/ui/kit/Spinner.svelte';
   import Toggle from '@/ui/kit/Toggle.svelte';
   import OpenRouterConnect from './OpenRouterConnect.svelte';
@@ -45,7 +46,9 @@
           ? 'On'
           : info.devOnly
             ? 'Development builds only'
-            : 'Not set up',
+            : !info.supportsCompletion && !info.supportsEmbeddings
+              ? 'Not used for summaries or Ask yet'
+              : 'Not set up',
   );
 
   async function save() {
@@ -115,6 +118,7 @@
 </script>
 
 <SettingsRow title={info.label} {detail}>
+  {#snippet icon()}<ProviderIcon {kind} />{/snippet}
   {#snippet control()}
     {#if !open}<Button size="sm" onclick={() => (expanded = true)}>Set up</Button>{/if}
     <Toggle label="Use {info.label}" checked={config?.enabled ?? false} disabled={!config} onchange={setEnabled} />
@@ -146,6 +150,9 @@
       {/if}
       {#if status.state === 'error'}<span class="error-text small">{status.message}</span>{/if}
     </div>
+    {#if config.connectedAt}
+      <p class="faint small">Disconnect removes the key from Carrel. It stays active on OpenRouter until you delete it under Keys.</p>
+    {/if}
     {#if status.state === 'ok' && info.supportsCompletion}
       <TryPrompt {kind} models={status.models} />
     {/if}

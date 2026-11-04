@@ -1,6 +1,7 @@
 <script lang="ts">
   import BookmarkPlus from '@lucide/svelte/icons/bookmark-plus';
   import X from '@lucide/svelte/icons/x';
+  import { backgroundUsageToday } from '@/lib/ai/limits';
   import { db, normalizeInsight } from '@/lib/db/schema';
   import { rowStatus } from '@/lib/library/ai-label';
   import { overallState } from '@/lib/library/ai-status';
@@ -88,9 +89,11 @@
 
   const selected = $derived(visible.find((d) => d.id === selectedId) ?? visible[0]);
 
+  const usage = live(() => backgroundUsageToday(), { used: 0, limit: 0, reached: false });
+
   const counts = $derived.by(() => {
     const states = documents.value.map((d) => overallState(ai.get(d.id)));
-    return { failed: states.filter((s) => s === 'failed').length };
+    return { failed: states.filter((s) => s === 'failed').length, waiting: states.filter((s) => s === 'queued').length };
   });
 
   function move(delta: number) {
@@ -139,7 +142,14 @@
       <Segmented options={FILTERS} bind:value={filter} label="Filter" />
     </header>
 
-    {#if !ai.aiReady && documents.value.length > 0}
+    {#if usage.value.reached && counts.waiting}
+      <div class="notice">
+        <Banner title="Summaries paused for today">
+          You've reached the daily limit of {usage.value.limit} background AI calls. {counts.waiting} page{counts.waiting === 1 ? '' : 's'} will be summarised tomorrow, or raise the limit in Settings.
+          {#snippet action()}<Button size="sm" onclick={() => (location.hash = '#/settings')}>Settings</Button>{/snippet}
+        </Banner>
+      </div>
+    {:else if !ai.aiReady && documents.value.length > 0}
       <div class="notice">
         <Banner title="Summaries are off">
           Choose a model so saved pages get summarised.
@@ -160,7 +170,7 @@
         <div class="empty">
           <EmptyState title="Your library is empty">
             {#snippet icon()}<BookmarkPlus size={18} />{/snippet}
-            Save any page with <Kbd keys="⌘⇧S" /> or the toolbar button. It will be summarised and searchable here.
+            Save any page with <Kbd keys="⌘⇧S" /> or the toolbar button. Once you choose a model in Settings, it's summarised and searchable here.
           </EmptyState>
         </div>
       {:else if visible.length === 0}

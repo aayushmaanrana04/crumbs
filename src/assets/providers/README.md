@@ -1,0 +1,1 @@
+Provider logos from [Simple Icons](https://simpleicons.org) v16.36.0 (SVG data CC0-1.0; the logos are trademarks of their owners and are used only to identify each provider). Single-colour, drawn with `currentColor`.

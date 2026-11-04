@@ -1,5 +1,6 @@
 // Markdown rendering of a summary, for the Markdown export and "Copy as Markdown".
 import type { Insight, InsightBlock } from '../db/schema';
+import { modelLabel } from './ai-label';
 
 const cell = (s: string) => s.replace(/\|/g, '\\|').replace(/\n/g, ' ');
 
@@ -25,7 +26,8 @@ function block(b: InsightBlock): string {
 
 export function insightToMarkdown(insight: Insight): string {
   return [
-    `> ${insight.gist}`,
+    // Labelled as AI so it isn't mistaken for the author's words (quotes and highlights use ">").
+    `## Summary\n\n_AI summary by ${modelLabel(insight.model) ?? insight.model}, ${new Date(insight.createdAt).toISOString().slice(0, 10)}._\n\n${insight.gist}`,
     insight.note ? `_${insight.note}_` : '',
     insight.keyPoints.length ? `## Key points\n\n${insight.keyPoints.map((p) => `- ${p}`).join('\n')}` : '',
     ...insight.blocks.map(block),

@@ -34,6 +34,20 @@ export async function deleteDocument(docId: string): Promise<void> {
   );
 }
 
+/**
+ * Delete the whole library from this browser: pages, summaries, search data, highlights, notes,
+ * projects and queued work. Settings, keys and the AI activity log are kept.
+ */
+export async function deleteAllData(): Promise<void> {
+  const tables = [
+    db.documents, db.chunks, db.embeddings, db.insights, db.entities, db.entityAliases,
+    db.mentions, db.relations, db.projects, db.highlights, db.jobs,
+  ];
+  await db.transaction('rw', tables, async () => {
+    for (const table of tables) await table.clear();
+  });
+}
+
 export async function updateDocument(
   docId: string,
   changes: Partial<Pick<KnowledgeDocument, 'title' | 'userNotes' | 'tags'>>,

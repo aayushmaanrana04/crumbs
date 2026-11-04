@@ -4,15 +4,21 @@ import { PROVIDER_INFO } from '../providers/catalog';
 import { BACKGROUND_ADAPTERS } from '../providers/registry';
 import type { CompletionRequest, CompletionResult } from '../providers/types';
 import { getProviderConfig } from '../settings/providers';
-import { embeddingSpace, taskSettings, type TaskName } from '../settings/tasks';
+import { embeddingSpace, TASKS, taskSettings, type TaskName } from '../settings/tasks';
 
 export class TaskNotConfiguredError extends Error {
   override name = 'TaskNotConfiguredError';
 }
 
+/** The message alone, without the "ProviderError:" prefix String() adds. */
+const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
 async function resolve(task: TaskName) {
   const settings = (await taskSettings.getValue())[task];
-  if (!settings.provider) throw new TaskNotConfiguredError(`Choose a model for "${task}" in Settings.`);
+  if (!settings.provider) {
+    const label = TASKS.find((t) => t.name === task)?.label ?? task;
+    throw new TaskNotConfiguredError(`Choose a model for “${label}” in Settings.`);
+  }
   const adapter = BACKGROUND_ADAPTERS[settings.provider];
   if (!adapter) throw new TaskNotConfiguredError(`${PROVIDER_INFO[settings.provider].label} isn't available here.`);
   const config = await getProviderConfig(settings.provider);
@@ -42,7 +48,7 @@ export async function runTask(task: TaskName, request: CompletionRequest, docId?
     await logUsage({ provider: settings.provider, model: result.model, task, docId, ok: true, ...result.usage });
     return result;
   } catch (error) {
-    await logUsage({ provider: settings.provider, model, task, docId, ok: false, error: String(error) });
+    await logUsage({ provider: settings.provider, model, task, docId, ok: false, error: errorText(error) });
     throw error;
   }
 }
@@ -55,7 +61,7 @@ export async function embedTexts(texts: string[], docId?: string): Promise<{ spa
     await logUsage({ provider: settings.provider, model: settings.model, task: 'embed', docId, ok: true });
     return { space: embeddingSpace(settings), vectors };
   } catch (error) {
-    await logUsage({ provider: settings.provider, model: settings.model, task: 'embed', docId, ok: false, error: String(error) });
+    await logUsage({ provider: settings.provider, model: settings.model, task: 'embed', docId, ok: false, error: errorText(error) });
     throw error;
   }
 }

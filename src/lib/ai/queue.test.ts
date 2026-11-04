@@ -16,7 +16,7 @@ vi.mock('../providers/registry', async () => {
 });
 
 // The fake browser doesn't implement the action API; the badge isn't under test.
-fakeBrowser.action = { setBadgeText: async () => {}, setBadgeBackgroundColor: async () => {} } as never;
+fakeBrowser.action = { setBadgeText: async () => {}, setBadgeBackgroundColor: async () => {}, setTitle: async () => {} } as never;
 
 const { drainQueue } = await import('./queue');
 
@@ -39,7 +39,7 @@ async function save() {
 
 beforeEach(async () => {
   fakeBrowser.reset();
-  fakeBrowser.action = { setBadgeText: async () => {}, setBadgeBackgroundColor: async () => {} } as never;
+  fakeBrowser.action = { setBadgeText: async () => {}, setBadgeBackgroundColor: async () => {}, setTitle: async () => {} } as never;
   await Promise.all(db.tables.map((t) => t.clear()));
   complete.mockReset();
   embed.mockReset();

@@ -39,6 +39,8 @@
   let tab = $state<'overview' | 'text'>('overview');
   let copied = $state(false);
   let reader = $state<HTMLElement>();
+  /** Set when "Show in full text" couldn't find the passage in the reader. */
+  let passageMissing = $state(false);
 
   // Opening the full page marks it read (drives the Library's Unread filter).
   $effect(() => {
@@ -84,6 +86,7 @@
     tab = 'text';
     await tick();
     const range = reader && findPassage(reader, passage);
+    passageMissing = !range;
     if (!range) return;
     CSS.highlights.set('cited', new Highlight(range));
     const target = range.startContainer.parentElement;
@@ -159,6 +162,7 @@
             </EmptyState>
           {/if}
         {:else}
+          {#if passageMissing}<p class="faint small">Couldn't find that passage in the saved text.</p>{/if}
           <div class="reader" bind:this={reader}>
             <Markdown source={readerText} />
           </div>

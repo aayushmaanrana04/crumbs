@@ -73,6 +73,9 @@ export async function errorFromResponse(res: Response, label: string): Promise<P
   if (res.status === 401 || res.status === 403) {
     return new ProviderError(`${label} rejected the API key (HTTP ${res.status}).`);
   }
+  if (res.status === 402) {
+    return new ProviderError(`${label} says your credit has run out. Add credit (or raise the key's limit) on ${label}, then retry.`);
+  }
   if (res.status === 429) {
     return new ProviderError(`${label} is rate limiting requests. Try again shortly.`);
   }

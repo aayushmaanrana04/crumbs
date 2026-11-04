@@ -1,7 +1,9 @@
 <script lang="ts">
   import { modelLabel } from '@/lib/library/ai-label';
   import type { AiStatus } from '@/lib/library/ai-status';
+  import { backgroundUsageToday } from '@/lib/ai/limits';
   import { rpc } from '@/lib/rpc/client';
+  import { live } from '@/ui/live.svelte';
   import { formatDate } from '@/ui/format';
   import Spinner from '@/ui/kit/Spinner.svelte';
 
@@ -9,6 +11,7 @@
 
   const run = () => rpc('jobs.reprocess', { docId });
   const states = $derived([status.insights, status.embed]);
+  const usage = live(() => backgroundUsageToday(), { used: 0, limit: 0, reached: false });
 </script>
 
 <div class="ai-status">
@@ -20,6 +23,9 @@
       Couldn't {status.insights === 'failed' ? 'summarise' : 'index for search'}{status.error ? `: ${status.error}` : ''}
     </span>
     <button type="button" onclick={run}>Retry</button>
+  {:else if states.includes('queued') && usage.value.reached}
+    <span>Paused: today's limit of {usage.value.limit} background AI calls is reached. Resumes tomorrow.</span>
+    <a href="#/settings">Change the limit</a>
   {:else if states.includes('queued')}
     <Spinner />
     <span>Waiting to be summarised</span>

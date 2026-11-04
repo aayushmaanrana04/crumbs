@@ -4,14 +4,14 @@ import { browser } from '#imports';
 import Dexie from 'dexie';
 import { db, type Job, type JobType } from '../db/schema';
 import { providerSettings } from '../settings/providers';
-import { configuredJobTypes, taskSettings, usageLimits } from '../settings/tasks';
+import { configuredJobTypes, taskSettings } from '../settings/tasks';
 import { embedDocument } from './embeddings';
+import { backgroundUsageToday } from './limits';
 import { generateInsights } from './insights';
 import { isTaskConfigured, TaskNotConfiguredError } from './run';
 
 const CONCURRENCY = 2;
 const MAX_ATTEMPTS = 3;
-const BACKGROUND_TASKS = ['insights', 'embed'];
 
 const HANDLERS: Record<JobType, (docId: string) => Promise<void>> = {
   insights: generateInsights,
@@ -78,15 +78,7 @@ async function runJob(job: Job): Promise<void> {
 }
 
 async function overDailyLimit(): Promise<boolean> {
-  const { dailyBackgroundCalls } = await usageLimits.getValue();
-  if (!dailyBackgroundCalls) return false;
-  const startOfDay = new Date().setHours(0, 0, 0, 0);
-  const used = await db.usage
-    .where('at')
-    .aboveOrEqual(startOfDay)
-    .filter((u) => BACKGROUND_TASKS.includes(u.task))
-    .count();
-  return used >= dailyBackgroundCalls;
+  return (await backgroundUsageToday()).reached;
 }
 
 /** Jobs left "running" when the service worker was stopped go back in the queue. */
@@ -108,6 +100,10 @@ export async function updateBadge(): Promise<void> {
     .anyOf('queued', 'running')
     .filter((j) => active.includes(j.type))
     .count();
-  await browser.action.setBadgeBackgroundColor({ color: '#0ea5a8' });
+  // Ink, like the rest of the design; the title says what the number means.
+  await browser.action.setBadgeBackgroundColor({ color: '#1A1A19' });
   await browser.action.setBadgeText({ text: pending > 0 ? String(Math.min(pending, 999)) : '' });
+  await browser.action.setTitle({
+    title: pending > 0 ? `Open Carrel · ${pending} page${pending === 1 ? '' : 's'} waiting to be summarised` : 'Open Carrel',
+  });
 }

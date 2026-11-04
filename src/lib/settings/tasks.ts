@@ -15,7 +15,8 @@ export const TASKS: { name: TaskName; label: string; description: string; needs:
   {
     name: 'insights',
     label: 'Understanding pages',
-    description: 'Summaries, takeaways, topics and entities for every saved page. Runs often, so a fast, inexpensive model works well.',
+    description:
+      'Summaries, key points, topics and entities for every saved page, including auto-captured ones, and again when Carrel updates its summary format. Runs in the background, so a fast, inexpensive model works well.',
     needs: 'completion',
   },
   {
@@ -27,7 +28,7 @@ export const TASKS: { name: TaskName; label: string; description: string; needs:
   {
     name: 'embed',
     label: 'Search by meaning',
-    description: 'Embeddings for meaning-based search. Changing this model re-processes your library.',
+    description: 'Indexes every saved page for meaning-based search. Choosing or changing this model re-indexes your whole library.',
     needs: 'embeddings',
   },
 ];

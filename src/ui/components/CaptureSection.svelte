@@ -63,7 +63,7 @@
   description="Pages are saved only when you ask, or on sites you turn auto-capture on for. Incognito windows are never saved."
 >
   {#if settings.value}
-    <SettingsRow title="Auto-capture" detail="Save pages automatically once you've spent time reading them.">
+    <SettingsRow title="Auto-capture" detail="Save pages automatically once you've spent time reading them. They're summarised like any page you save.">
       {#if settings.value.autoCaptureSites.length}
         <ul class="sites">
           {#each settings.value.autoCaptureSites as site (site)}
