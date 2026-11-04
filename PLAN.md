@@ -1,4 +1,4 @@
-# Plan: Summaryse → Personal Knowledge OS
+# Plan: Carrel (formerly Summaryse) → Personal Knowledge OS
 
 Source: the Personal Knowledge OS product design doc (PDD). This plan maps the PDD onto the
 current repo, lists what gets removed, and splits the work into shippable phases.
@@ -156,6 +156,6 @@ As built: embeddings come from a provider (OpenAI, Gemini, Ollama); without one,
 ## 6. Open questions
 1. ~~Toolchain~~: decided, WXT + Svelte 5 + TypeScript.
 2. Embeddings: always via a provider, or allow one tiny local embedding model (~25 MB, no LLM) so search works offline and for free?
-3. Product name: keep "Summaryse" or rename?
+3. ~~Product name~~: decided, Carrel.
 4. OpenCredits: is there API documentation or a contact? It blocks the wallet adapter only.
 5. MVP cut: ship Phases 0–3 as v1?

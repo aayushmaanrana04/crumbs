@@ -7,6 +7,7 @@ import { ProviderError, type CompletionResult, type ProviderAdapter } from './ty
 // Claude subscription to power a shipped product isn't permitted, so this
 // adapter is excluded from production builds.
 
+// Pre-rename host name, kept so installed dev bridges keep working.
 const HOST = 'com.summaryse.claude_bridge';
 
 type BridgeReply<T> = { ok: true; data: T } | { ok: false; error: string };

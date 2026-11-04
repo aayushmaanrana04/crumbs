@@ -16,6 +16,7 @@
   import Button from '@/ui/kit/Button.svelte';
   import EmptyState from '@/ui/kit/EmptyState.svelte';
   import IconButton from '@/ui/kit/IconButton.svelte';
+  import Logo from '@/ui/kit/Logo.svelte';
   import RelatedCard from '@/ui/kit/RelatedCard.svelte';
   import SectionHeading from '@/ui/kit/SectionHeading.svelte';
   import Spinner from '@/ui/kit/Spinner.svelte';
@@ -160,7 +161,7 @@
 
 <div class="panel">
   <header class="head">
-    <span class="brand">Summaryse</span>
+    <Logo size={18} wordmark />
     <a class="library" href="#/library" aria-label="Open library" title="Open library"><Library size={16} /></a>
   </header>
 
@@ -184,7 +185,7 @@
     {:else if view.state === 'unreadable'}
       <EmptyState title="Nothing to show for this tab">
         {#if view.url && isCapturableUrl(view.url)}
-          Summaryse needs access to read this page.
+          Carrel needs access to read this page.
           <div class="center"><Button kind="primary" size="sm" onclick={() => allowSite(view.state === 'unreadable' ? view.url! : '')}>Allow on this site</Button></div>
           Or click the toolbar button while you're on the page.
         {:else}
@@ -262,10 +263,6 @@
     justify-content: space-between;
     padding: 10px 12px 10px 16px;
     border-bottom: 1px solid var(--border);
-  }
-  .brand {
-    font-weight: 600;
-    letter-spacing: -0.2px;
   }
   .switched {
     padding: 12px 12px 0;

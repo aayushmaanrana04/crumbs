@@ -30,7 +30,7 @@ describe('export and import', () => {
     expect(await importJson(file)).toEqual({ added: 0, skipped: 1 });
   });
 
-  it('rejects files that are not Summaryse backups', async () => {
+  it('rejects files that are not Carrel backups', async () => {
     await expect(importJson(new File(['{"hello":1}'], 'x.json'))).rejects.toThrow();
   });
 });

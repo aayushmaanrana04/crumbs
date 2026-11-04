@@ -35,7 +35,7 @@ export async function captureTab(tabId: number, source: 'manual' | 'auto', selec
 
 /** Brief confirmation inside the page. Self-contained because it's serialised into the tab. */
 function renderToast(text: string, isError: boolean) {
-  const id = 'summaryse-toast-host';
+  const id = 'carrel-toast-host';
   document.getElementById(id)?.remove();
   const host = document.createElement('div');
   host.id = id;
@@ -95,6 +95,7 @@ export async function previewTab(tabId: number): Promise<PagePreview | null> {
   }
 }
 
+// Pre-rename id, kept so an update replaces the script already registered.
 const AUTO_SCRIPT_ID = 'summaryse-autocapture';
 
 /** Register the auto-capture script for every opted-in site we still have access to. */

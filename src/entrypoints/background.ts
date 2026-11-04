@@ -66,8 +66,8 @@ export default defineBackground(() => {
 
   browser.runtime.onInstalled.addListener(async ({ reason }) => {
     await browser.contextMenus.removeAll();
-    browser.contextMenus.create({ id: 'save-page', title: 'Save page to Summaryse', contexts: ['page'] });
-    browser.contextMenus.create({ id: 'save-selection', title: 'Save highlight to Summaryse', contexts: ['selection'] });
+    browser.contextMenus.create({ id: 'save-page', title: 'Save page to Carrel', contexts: ['page'] });
+    browser.contextMenus.create({ id: 'save-selection', title: 'Save highlight to Carrel', contexts: ['selection'] });
     if (reason === 'install') {
       await browser.tabs.create({ url: browser.runtime.getURL('/app.html#/settings') });
     }
@@ -133,7 +133,7 @@ export default defineBackground(() => {
     async 'capture.auto'(_args, sender) {
       if (sender.tab?.id === undefined) return null;
       const outcome = await captureTab(sender.tab.id, 'auto');
-      if (outcome.status === 'saved') await showToast(sender.tab.id, 'Saved automatically to Summaryse');
+      if (outcome.status === 'saved') await showToast(sender.tab.id, 'Saved automatically to Carrel');
       void drainQueue();
       return outcome;
     },

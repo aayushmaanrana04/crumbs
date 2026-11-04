@@ -8,7 +8,7 @@ export default defineConfig({
   manifest: ({ mode }) => {
     const dev = mode === 'development';
     return {
-      name: 'Summaryse',
+      name: 'Carrel',
       description: 'Your personal knowledge, built while you browse.',
       // nativeMessaging is only for the Claude dev bridge and never ships.
       permissions: [
@@ -25,14 +25,14 @@ export default defineConfig({
       // Follow mode only: lets the side panel see the active tab's address and title as you switch tabs.
       optional_permissions: ['tabs'],
       // The toolbar button opens the side panel (set in the background).
-      action: { default_title: 'Open Summaryse' },
+      action: { default_title: 'Open Carrel' },
       // Requested at runtime: provider hosts when a provider is tested, and
       // individual sites when the user turns on auto-capture for them.
       optional_host_permissions: [...PROVIDER_ORIGINS, 'https://*/*', 'http://*/*'],
       commands: {
         'save-page': {
           suggested_key: { default: 'Ctrl+Shift+S', mac: 'Command+Shift+S' },
-          description: 'Save this page to Summaryse',
+          description: 'Save this page to Carrel',
         },
       },
       // Fixed ID in development so the dev bridge can allow-list it.

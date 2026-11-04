@@ -23,7 +23,7 @@ export interface KnowledgeDocument {
   excerpt: string;
   /** How it was saved: a click/shortcut/menu, or auto-capture. */
   source: 'manual' | 'auto';
-  /** When the full page was last opened in Summaryse; unset means unread. */
+  /** When the full page was last opened in Carrel; unset means unread. */
   readAt?: number;
   userNotes: string;
   tags: string[];
@@ -220,6 +220,7 @@ export class KnowledgeDB extends Dexie {
   usage!: EntityTable<UsageRecord, 'id'>;
 
   constructor() {
+    // The database keeps its original name so existing libraries survive the rename.
     super('summaryse');
     this.version(1).stores({
       documents: 'id, &canonicalUrl, contentHash, type, capturedAt, status, *tags, *projectIds',

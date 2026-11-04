@@ -7,6 +7,7 @@
   import { db } from '@/lib/db/schema';
   import { projectPageCounts, tagCounts } from '@/lib/library/documents';
   import GroupLabel from '@/ui/kit/GroupLabel.svelte';
+  import Logo from '@/ui/kit/Logo.svelte';
   import NavItem from '@/ui/kit/NavItem.svelte';
   import { live } from '@/ui/live.svelte';
   import { router } from '@/ui/router.svelte';
@@ -64,8 +65,7 @@
 <div class="shell">
   <nav class="sidebar" aria-label="Main">
     <div class="workspace">
-      <span class="monogram" aria-hidden="true">S</span>
-      <span class="name">Summaryse</span>
+      <Logo size={20} wordmark />
     </div>
 
     <NavItem
@@ -160,22 +160,6 @@
     align-items: center;
     gap: 10px;
     padding: 6px 10px 18px;
-  }
-  .monogram {
-    width: 24px;
-    height: 24px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 7px;
-    background: var(--primary);
-    color: var(--on-primary);
-    font-size: 13px;
-    font-weight: 700;
-  }
-  .name {
-    font-size: var(--text-base);
-    font-weight: 600;
   }
   .tag-mark {
     width: 16px;
