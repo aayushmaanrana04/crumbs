@@ -1,10 +1,16 @@
 <script lang="ts">
-  let { n, text }: { n: number; text: string } = $props();
+  import type { Snippet } from 'svelte';
+
+  // `cite` sits right after the text (it may render nothing); `children` opens below it (a cited passage).
+  let { n, text, cite, children }: { n: number; text: string; cite?: Snippet; children?: Snippet } = $props();
 </script>
 
 <li class="point">
   <span class="n">{n}</span>
-  <span class="text">{text}</span>
+  <div class="body">
+    <span class="text">{text}{#if cite}&nbsp;{@render cite()}{/if}</span>
+    {@render children?.()}
+  </div>
 </li>
 
 <style>
@@ -26,6 +32,12 @@
     font-size: var(--text-xs);
     font-weight: 600;
     color: var(--text-2);
+  }
+  .body {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 8px;
   }
   .text {
     font-size: var(--text-base);

@@ -41,7 +41,7 @@
 </div>
 
 {#if insight.value}
-  <DocInsights docId={doc.id} insight={insight.value} />
+  <DocInsights docId={doc.id} insight={insight.value} markdown={doc.markdown} />
 {:else if doc.excerpt}
   <p class="excerpt">{doc.excerpt}</p>
 {/if}

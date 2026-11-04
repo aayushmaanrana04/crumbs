@@ -2,6 +2,11 @@
   import { db, normalizeInsight } from '@/lib/db/schema';
   import { updateDocument } from '@/lib/library/documents';
   import { aiStatuses } from '@/ui/ai-status.svelte';
+  import { citations } from '@/ui/citations.svelte';
+  import Markdown from '@/ui/components/Markdown.svelte';
+  import Citation from '@/ui/kit/Citation.svelte';
+  import CitedPassage from '@/ui/kit/CitedPassage.svelte';
+  import { docHref } from '@/ui/router.svelte';
   import AiStatus from '@/ui/components/AiStatus.svelte';
   import DocProjects from '@/ui/components/DocProjects.svelte';
   import NotesField from '@/ui/components/NotesField.svelte';
@@ -18,18 +23,40 @@
   const highlights = live(() => db.highlights.where('docId').equals(docId).sortBy('createdAt'), []);
   const ai = aiStatuses();
   const insight = $derived(stored.value ? normalizeInsight(stored.value) : undefined);
+  // Only read while a summary is shown, so `insight` is set.
+  const cites = citations(() => insight!, () => doc.value?.markdown);
 </script>
+
+{#snippet citeFor(key: 'gist' | number)}
+  {#if cites.span(key)}<Citation active={cites.isOpen(key)} onclick={() => cites.toggle(key)} />{/if}
+{/snippet}
+
+<!-- Opens the page in the app with the passage shown (links in the panel open a new tab). -->
+{#snippet passage(key: 'gist' | number)}
+  {@const span = cites.span(key)}
+  {#if span && cites.isOpen(key)}
+    <CitedPassage href={docHref(docId, span)}><Markdown source={cites.text(key)} size="compact" /></CitedPassage>
+  {/if}
+{/snippet}
 
 <div class="saved">
   <AiStatus {docId} status={ai.get(docId)} model={insight?.model} at={insight?.createdAt} />
 
   {#if insight}
-    <p class="gist">{insight.gist}</p>
+    <div class="gist-block">
+      <p class="gist">{insight.gist}&nbsp;{@render citeFor('gist')}</p>
+      {@render passage('gist')}
+    </div>
     {#if insight.keyPoints.length}
       <section>
         <SectionHeading label="Key points" />
         <ol class="points">
-          {#each insight.keyPoints.slice(0, 3) as text, i (i)}<NumberedPoint n={i + 1} {text} />{/each}
+          {#each insight.keyPoints.slice(0, 3) as text, i (i)}
+            <NumberedPoint n={i + 1} {text}>
+              {#snippet cite()}{@render citeFor(i)}{/snippet}
+              {@render passage(i)}
+            </NumberedPoint>
+          {/each}
         </ol>
       </section>
     {/if}
@@ -58,6 +85,10 @@
   .saved {
     display: grid;
     gap: 20px;
+  }
+  .gist-block {
+    display: grid;
+    gap: 10px;
   }
   .gist {
     margin: 0;

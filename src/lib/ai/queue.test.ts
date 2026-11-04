@@ -1,7 +1,7 @@
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { saveExtractedPage } from '../capture/save';
-import { db } from '../db/schema';
+import { db, type Insight } from '../db/schema';
 import type { ProviderAdapter } from '../providers/types';
 import { providerSettings } from '../settings/providers';
 import { taskSettings } from '../settings/tasks';
@@ -24,7 +24,8 @@ const emptyBlock = { title: '', items: [], columns: [], rows: [], series: [], un
 const insight = {
   kind: 'opinion',
   gist: 'Local-first apps keep the primary copy of your data on your device.',
-  keyPoints: ['IndexedDB makes large local storage practical in browsers.'],
+  gistQuote: 'A sentence the page never says.',
+  keyPoints: [{ text: 'IndexedDB makes large local storage practical in browsers.', quote: 'Sentence 3 about local-first software and IndexedDB.' }],
   blocks: [{ ...emptyBlock, type: 'list', title: 'Why it matters', items: [{ text: 'Apps keep working offline.', code: '', lang: '' }] }],
   note: '',
   tags: ['Local First', 'storage'],
@@ -61,6 +62,10 @@ describe('job queue', () => {
     expect(complete.mock.calls[0]![1]).toMatchObject({ model: 'small', effort: 'low' });
     const stored = await db.insights.get(docId);
     expect(stored).toMatchObject({ version: 2, kind: 'opinion', gist: insight.gist });
+    // The key point's quote is in the page; the gist's isn't, so it has no citation.
+    const cited = (stored as Insight).citations!;
+    expect(cited.gist).toBeNull();
+    expect(markdown.slice(cited.keyPoints[0]!.start, cited.keyPoints[0]!.end)).toBe('Sentence 3 about local-first software and IndexedDB.');
     const doc = await db.documents.get(docId);
     expect(doc?.tags).toEqual(['local-first', 'storage']);
     const chunks = await db.chunks.where('docId').equals(docId).count();

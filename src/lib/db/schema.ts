@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
+import type { Span } from '../text/locate';
 
 // Local knowledge store. IDs are UUIDs so exports/imports stay stable across devices.
 
@@ -76,6 +77,11 @@ export interface Insight {
   /** Suggested broad tags; applied to pages the user hasn't tagged. */
   tags: string[];
   entities: { name: string; type: EntityType }[];
+  /**
+   * Where the gist and each key point come from: offsets into the document's `markdown`, null when
+   * the model's quote couldn't be found in the page. Absent on summaries made before citations.
+   */
+  citations?: { gist: Span | null; keyPoints: (Span | null)[] };
   model: string;
   createdAt: number;
 }

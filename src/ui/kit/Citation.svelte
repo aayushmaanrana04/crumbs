@@ -1,8 +1,20 @@
 <script lang="ts">
-  let { n, active = false, onclick }: { n: number; active?: boolean; onclick?: () => void } = $props();
+  import Quote from '@lucide/svelte/icons/quote';
+
+  // Numbered for Ask's sources; without `n` it's the quote mark a summary uses to show where a point comes from.
+  let { n, active = false, onclick }: { n?: number; active?: boolean; onclick?: () => void } = $props();
 </script>
 
-<button type="button" class="cite" class:active aria-label="Source {n}" {onclick}>{n}</button>
+<button
+  type="button"
+  class="cite"
+  class:active
+  aria-label={n === undefined ? 'Show where this comes from' : `Source ${n}`}
+  aria-expanded={n === undefined ? active : undefined}
+  {onclick}
+>
+  {#if n === undefined}<Quote size={10} strokeWidth={2.5} />{:else}{n}{/if}
+</button>
 
 <style>
   .cite {

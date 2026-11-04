@@ -47,7 +47,7 @@ Light and dark follow the system setting (`prefers-color-scheme`).
 | Inputs | `Field` (label, hint, error) · `Input` · `TextArea` · `SearchField` (with shortcut) · `Select` · `Segmented` · `Toggle` · `Checkbox` |
 | Navigation and lists | `NavItem` · `GroupLabel` · `ListRow` (status is a word; only errors are red) |
 | Reading | `Property` · `SectionHeading` · `NumberedPoint` · `Tag` · `RelatedCard` · `HighlightCard` |
-| Ask | `Citation` · `Inference` ("Not from your sources") · `SourceCard` |
+| Ask and citations | `Citation` (numbered for Ask; a quote mark when a summary point cites the page) · `CitedPassage` (the page's words, “Show in full text”) · `Inference` ("Not from your sources") · `SourceCard` |
 | Feedback and settings | `Banner` (info, error) · `EmptyState` · `SkeletonRow` · `SettingsGroup` · `SettingsRow` |
 | Projects | `ProjectChip` · `ProjectPicker` (checkboxes plus “New project…”) · `Suggestion` (Add / Not now, never automatic) · `QuestionItem` |
 | Summary blocks | `CodeBlock` (with copy) · `DataTable` · `BarChart` · `Callout` (info, warning) · steps and quotes in `InsightBlocks` · gist and note in `DocInsights` |

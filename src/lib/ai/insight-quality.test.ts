@@ -47,11 +47,12 @@ const block = (over: Partial<RawBlock>): RawBlock => ({
 const raw = (over: Partial<RawInsight> = {}): RawInsight => ({
   kind: 'docs',
   gist: 'Handle SIGTERM so in-flight requests finish before Kubernetes sends SIGKILL.',
+  gistQuote: '',
   keyPoints: [
     'Kubernetes stops routing traffic, sends SIGTERM, then SIGKILL after a grace period.',
     'Kubernetes stops routing new traffic and sends SIGTERM, then SIGKILL after the grace period.',
     'The post is dated August 31, 2026.',
-  ],
+  ].map((text) => ({ text, quote: '' })),
   blocks: [],
   note: '',
   tags: ['Kubernetes', 'kubernetes', 'Graceful Shutdown', 'signals', 'backend'],
@@ -65,6 +66,22 @@ describe('refineInsight', () => {
     expect(r.keyPoints).toEqual(['Kubernetes stops routing traffic, sends SIGTERM, then SIGKILL after a grace period.']);
     expect(r.tags).toEqual(['kubernetes', 'graceful-shutdown', 'signals']);
     expect(r.entities.map((e) => e.name)).toEqual(['Kubernetes', 'Go']);
+  });
+
+  it('keeps supporting quotes found in the page and clears invented ones', () => {
+    const r = refineInsight(
+      raw({
+        gistQuote: 'Kubernetes stops routing traffic, sends SIGTERM and waits a grace period of 30 seconds before SIGKILL.',
+        keyPoints: [
+          { text: 'Snapshots beat raw HTML on task completion.', quote: 'Agents using snapshots completed 68 percent of tasks versus 41 percent with raw HTML' },
+          { text: 'Install the SDK from npm.', quote: 'The SDK is distributed through npm and yarn.' },
+        ],
+      }),
+      SOURCE,
+      normalizeTag,
+    );
+    expect(r.gistQuote).toMatch(/^Kubernetes stops routing/);
+    expect(r.keyPointQuotes).toEqual(['Agents using snapshots completed 68 percent of tasks versus 41 percent with raw HTML', '']);
   });
 
   it('keeps code that comes from the page and strips invented code', () => {
@@ -125,7 +142,7 @@ describe('refineInsight', () => {
   it('drops a callout that restates a key point', () => {
     const r = refineInsight(
       raw({
-        keyPoints: ['Each SDK instance maps to one widget; reopening the widget requires a fresh SDK initialization.'],
+        keyPoints: [{ text: 'Each SDK instance maps to one widget; reopening the widget requires a fresh SDK initialization.', quote: '' }],
         blocks: [block({ type: 'callout', tone: 'warning', text: 'Each SDK instance maps to one widget. To close and reopen Onramp Instant, you must initialise the SDK again.' })],
       }),
       SOURCE,

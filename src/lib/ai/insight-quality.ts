@@ -2,6 +2,7 @@
 // non-repetitive, and drops numbers, code and quotes that can't be found in the page,
 // so structured blocks are as trustworthy as plain text. Covered by insight-quality.test.ts.
 import type { InsightBlock, PageKind } from '../db/schema';
+import { locateQuote } from '../text/locate';
 
 export const GIST_MAX_WORDS = 25;
 export const MAX_KEY_POINTS = 5;
@@ -34,7 +35,8 @@ export interface RawBlock {
 export interface RawInsight {
   kind: PageKind;
   gist: string;
-  keyPoints: string[];
+  gistQuote: string;
+  keyPoints: { text: string; quote: string }[];
   blocks: RawBlock[];
   note: string;
   tags: string[];
@@ -45,6 +47,9 @@ export interface RefinedInsight {
   kind: PageKind;
   gist: string;
   keyPoints: string[];
+  /** Supporting quotes that were found in the page, '' otherwise. One per key point. */
+  gistQuote: string;
+  keyPointQuotes: string[];
   blocks: InsightBlock[];
   note: string;
   tags: string[];
@@ -203,11 +208,14 @@ const entityKey = (name: string) => name.toLowerCase().replace(/[^\p{L}\p{N}]+/g
 /** Tidy and verify a model draft against the page's text. */
 export function refineInsight(raw: RawInsight, source: string, normalizeTag: (t: string) => string): RefinedInsight {
   const gist = raw.gist.trim();
+  const found = (quote: string) => (locateQuote(quote, source) ? quote.trim() : '');
   const keyPoints: string[] = [];
+  const keyPointQuotes: string[] = [];
   for (const p of raw.keyPoints) {
-    const text = p.trim();
+    const text = p.text.trim();
     if (!text || PAGE_DETAIL.test(text) || repeats(text, [gist, ...keyPoints])) continue;
     keyPoints.push(text);
+    keyPointQuotes.push(found(p.quote));
     if (keyPoints.length === MAX_KEY_POINTS) break;
   }
 
@@ -235,6 +243,8 @@ export function refineInsight(raw: RawInsight, source: string, normalizeTag: (t:
     kind: raw.kind,
     gist,
     keyPoints,
+    gistQuote: found(raw.gistQuote),
+    keyPointQuotes,
     blocks,
     note: note && !PAGE_DETAIL.test(note) ? note : '',
     tags: [...new Set(raw.tags.map(normalizeTag).filter(Boolean))].slice(0, MAX_TAGS),

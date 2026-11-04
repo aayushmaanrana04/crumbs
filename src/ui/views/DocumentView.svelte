@@ -79,11 +79,11 @@
     setTimeout(() => (copied = false), 1500);
   }
 
-  /** Switch to the full text and highlight the cited passage there. */
-  async function showInText() {
+  /** Switch to the full text and highlight a passage there: the one Ask cited, or one a summary point cites. */
+  async function showInText(passage = cited) {
     tab = 'text';
     await tick();
-    const range = reader && findPassage(reader, cited);
+    const range = reader && findPassage(reader, passage);
     if (!range) return;
     CSS.highlights.set('cited', new Highlight(range));
     const target = range.startContainer.parentElement;
@@ -145,14 +145,14 @@
             <section class="cited">
               <div class="cited-head">
                 <span class="section-label">Cited passage</span>
-                <Button size="sm" onclick={showInText}>Show in full text</Button>
+                <Button size="sm" onclick={() => showInText()}>Show in full text</Button>
               </div>
               <Markdown source={cited} size="compact" />
             </section>
           {/if}
 
           {#if insight.value}
-            <DocInsights {docId} insight={insight.value} />
+            <DocInsights {docId} insight={insight.value} markdown={d.markdown} onshow={showInText} />
           {:else}
             <EmptyState title="No summary yet">
               {#if d.excerpt}{d.excerpt}{:else}The summary appears here once this page has been processed.{/if}

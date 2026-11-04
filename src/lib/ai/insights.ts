@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { db, normalizeInsight, PAGE_KINDS, type DocumentType, type Insight } from '../db/schema';
 import { normalizeTag, tagCounts } from '../library/documents';
 import { estimateTokens, splitIntoChunks } from '../text/chunking';
+import { locateQuote } from '../text/locate';
 import { gistProblems, refineInsight, type GistProblem, type RefinedInsight } from './insight-quality';
 import { toJsonSchema } from './json';
 import { UNTRUSTED_CONTENT_RULE, wrapDocument } from './prompts';
@@ -29,7 +30,10 @@ const BlockSchema = z.strictObject({
 export const InsightSchema = z.strictObject({
   kind: z.enum(PAGE_KINDS),
   gist: z.string().describe('One sentence, at most 25 words, stating the main point or what the page lets you do.'),
-  keyPoints: z.array(z.string()).describe('2 to 5 points, each at most 25 words, each adding something new.'),
+  gistQuote: z.string().describe('The sentence from the page that best supports the gist, copied exactly.'),
+  keyPoints: z
+    .array(z.strictObject({ text: z.string(), quote: z.string().describe('The sentence from the page that supports this point, copied exactly.') }))
+    .describe('2 to 5 points, each at most 25 words, each adding something new.'),
   blocks: z.array(BlockSchema).describe('0 to 4 structured blocks, following the recipe for the page kind.'),
   note: z.string().describe('Empty, or one sentence about something important missing from the saved text.'),
   tags: z.array(z.string()).describe('1 to 3 broad lowercase topic labels.'),
@@ -61,6 +65,7 @@ const SYSTEM = `You turn a saved web page into a compact, useful card for the re
   Bad: "The article argues that backends should handle shutdown signals gracefully."
   Good: "Handle SIGTERM so in-flight requests finish before Kubernetes' grace period ends and SIGKILL arrives."
 - keyPoints: 2 to 5 points of at most 25 words. Each adds something not in the gist, another point or a block.
+- Quotes (gistQuote, and quote on each key point): the one sentence from the page that best supports it, at most 40 words, copied character for character. Never paraphrase, shorten or join sentences. Leave it "" if no single sentence supports it.
 - Blocks: at most 4. Use only numbers, code and quotes that appear in the page, copied exactly; never invent or compute code or values. A chart's values must all appear in the page. Table rows have one cell per column. Leave unused block fields empty ("" or []), and set tone to "none" unless the block is a callout.
 - note: empty unless content is missing from the saved text (shown only as an image, truncated, collapsed), e.g. "The code example is an image, so it isn't in the saved copy." Never use the note to judge or correct the page.
 - Never mention page details: title, URL, author or byline, publish or update dates, reading time, site navigation.
@@ -140,13 +145,22 @@ export async function generateInsights(docId: string): Promise<void> {
     }
     result = await analyse(
       `${prefix}These are summaries of consecutive parts of one page titled ${JSON.stringify(doc.title)}. ` +
-        `Merge them into one summary of the whole page, following the same rules.\n\n<document>\n${JSON.stringify(partials)}\n</document>`,
+        `Merge them into one summary of the whole page, following the same rules. Take quotes unchanged from the parts' gistQuote and keyPointQuotes.\n\n<document>\n${JSON.stringify(partials)}\n</document>`,
       source,
       docId,
     );
   }
 
-  const insight: Insight = { docId, version: 2, ...result.draft, model: result.model, createdAt: Date.now() };
+  const { gistQuote, keyPointQuotes, ...draft } = result.draft;
+  const cite = (quote: string) => (quote ? locateQuote(quote, source) : null);
+  const insight: Insight = {
+    docId,
+    version: 2,
+    ...draft,
+    citations: { gist: cite(gistQuote), keyPoints: keyPointQuotes.map(cite) },
+    model: result.model,
+    createdAt: Date.now(),
+  };
   await db.transaction('rw', db.insights, db.documents, async () => {
     const previous = await db.insights.get(docId);
     await db.insights.put(insight);
