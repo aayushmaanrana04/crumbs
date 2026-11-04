@@ -1,37 +1,52 @@
 <script lang="ts">
-  import { db, type DocumentType } from '@/lib/db/schema';
+  import BookmarkPlus from '@lucide/svelte/icons/bookmark-plus';
+  import X from '@lucide/svelte/icons/x';
+  import { db, normalizeInsight } from '@/lib/db/schema';
+  import { rowStatus } from '@/lib/library/ai-label';
   import { overallState } from '@/lib/library/ai-status';
   import { rpc } from '@/lib/rpc/client';
-  import { aiStatuses } from '@/ui/ai-status.svelte';
   import { groupByDocument, searchPassages, type PassageHit } from '@/lib/search/search';
+  import { aiStatuses } from '@/ui/ai-status.svelte';
+  import DocPreview from '@/ui/components/DocPreview.svelte';
   import Passage from '@/ui/components/Passage.svelte';
-  import AiBadge from '@/ui/components/AiBadge.svelte';
-  import { formatDate, TYPE_LABELS } from '@/ui/format';
+  import { dayGroup } from '@/ui/format';
+  import Banner from '@/ui/kit/Banner.svelte';
+  import Button from '@/ui/kit/Button.svelte';
+  import EmptyState from '@/ui/kit/EmptyState.svelte';
+  import GroupLabel from '@/ui/kit/GroupLabel.svelte';
+  import Kbd from '@/ui/kit/Kbd.svelte';
+  import ListRow from '@/ui/kit/ListRow.svelte';
+  import SearchField from '@/ui/kit/SearchField.svelte';
+  import Segmented from '@/ui/kit/Segmented.svelte';
   import { live } from '@/ui/live.svelte';
   import { docHref } from '@/ui/router.svelte';
 
+  let { tag }: { tag: string | null } = $props();
+
+  type Filter = 'all' | 'unread' | 'highlights';
+  const FILTERS: { value: Filter; label: string }[] = [
+    { value: 'all', label: 'All' },
+    { value: 'unread', label: 'Unread' },
+    { value: 'highlights', label: 'Highlights' },
+  ];
+
   const documents = live(() => db.documents.orderBy('capturedAt').reverse().toArray(), []);
-  const insights = live(async () => new Map((await db.insights.toArray()).map((i) => [i.docId, i])), new Map());
+  const highlighted = live(async () => {
+    const counts = new Map<string, number>();
+    for (const h of await db.highlights.toArray()) counts.set(h.docId, (counts.get(h.docId) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>());
+  const gists = live(async () => new Map((await db.insights.toArray()).map((i) => [i.docId, normalizeInsight(i).gist])), new Map<string, string>());
   const ai = aiStatuses();
-  const jobCounts = $derived.by(() => {
-    const states = documents.value.map((d) => overallState(ai.get(d.id)));
-    return {
-      pending: states.filter((s) => s === 'running' || s === 'queued').length,
-      failed: states.filter((s) => s === 'failed').length,
-    };
-  });
 
+  let filter = $state<Filter>('all');
   let query = $state('');
-  let typeFilter = $state<DocumentType | ''>('');
-  let siteFilter = $state('');
-  let tagFilter = $state('');
   let hits = $state<Map<string, PassageHit> | null>(null);
+  let selectedId = $state<string | null>(null);
+  let searchInput = $state<HTMLInputElement>();
+  let retrying = $state(false);
 
-  const sites = $derived([...new Set(documents.value.map((d) => d.siteName).filter(Boolean))].sort() as string[]);
-  const tags = $derived([...new Set(documents.value.flatMap((d) => d.tags))].sort());
-  const types = $derived([...new Set(documents.value.map((d) => d.type))]);
-
-  // Keyword search over passages, debounced; results keep library order otherwise.
+  // Keyword search over passages, debounced.
   $effect(() => {
     const q = query.trim();
     if (!q) {
@@ -41,16 +56,16 @@
     const timer = setTimeout(async () => {
       const { hits: found } = await searchPassages(q, { semantic: false, limit: 200 });
       hits = new Map(groupByDocument(found).map((h) => [h.doc.id, h]));
-    }, 200);
+    }, 180);
     return () => clearTimeout(timer);
   });
 
   const visible = $derived.by(() => {
     let list = documents.value.filter(
       (d) =>
-        (!typeFilter || d.type === typeFilter) &&
-        (!siteFilter || d.siteName === siteFilter) &&
-        (!tagFilter || d.tags.includes(tagFilter)),
+        (!tag || d.tags.includes(tag)) &&
+        (filter !== 'unread' || !d.readAt) &&
+        (filter !== 'highlights' || highlighted.value.has(d.id)),
     );
     if (hits) {
       const order = [...hits.keys()];
@@ -59,160 +74,193 @@
     return list;
   });
 
-  let retrying = $state(false);
+  // Date groups only make sense in date order, not for ranked search results.
+  const groups = $derived.by(() => {
+    if (hits) return [{ label: `${visible.length} result${visible.length === 1 ? '' : 's'}`, docs: visible }];
+    const out: { label: string; docs: typeof visible }[] = [];
+    for (const d of visible) {
+      const label = dayGroup(d.capturedAt);
+      if (out.at(-1)?.label !== label) out.push({ label, docs: [] });
+      out.at(-1)!.docs.push(d);
+    }
+    return out;
+  });
+
+  const selected = $derived(visible.find((d) => d.id === selectedId) ?? visible[0]);
+
+  const counts = $derived.by(() => {
+    const states = documents.value.map((d) => overallState(ai.get(d.id)));
+    return { failed: states.filter((s) => s === 'failed').length };
+  });
+
+  function move(delta: number) {
+    const i = visible.findIndex((d) => d.id === selected?.id);
+    const next = visible[Math.min(visible.length - 1, Math.max(0, i + delta))];
+    if (!next) return;
+    selectedId = next.id;
+    document.getElementById(`row-${next.id}`)?.scrollIntoView({ block: 'nearest' });
+  }
+
+  function onkeydown(e: KeyboardEvent) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const typing = (e.target as HTMLElement).closest('input, textarea, select');
+    if (e.key === '/' && !typing) {
+      e.preventDefault();
+      searchInput?.focus();
+    } else if (!typing && (e.key === 'ArrowDown' || e.key === 'j')) {
+      e.preventDefault();
+      move(1);
+    } else if (!typing && (e.key === 'ArrowUp' || e.key === 'k')) {
+      e.preventDefault();
+      move(-1);
+    } else if (!typing && e.key === 'Enter' && selected) {
+      location.hash = docHref(selected.id);
+    }
+  }
+
   async function retryFailed() {
     retrying = true;
     await rpc('jobs.retryFailed').finally(() => (retrying = false));
   }
 </script>
 
-<div class="header">
-  <h1 class="page-title">Library</h1>
-  <span class="muted small">
-    {documents.value.length} saved
-    {#if jobCounts.pending}· {jobCounts.pending} being processed by AI{/if}
-    {#if jobCounts.failed}
-      · <span class="error-text">{jobCounts.failed} failed</span>
-      <button class="link-button" disabled={retrying} onclick={retryFailed}>Retry</button>
+<svelte:window {onkeydown} />
+
+<div class="library">
+  <div class="list-pane">
+    <header class="list-head">
+      <div class="title-row">
+        <h1 class="page-title">{tag ? tag : 'Library'}</h1>
+        {#if tag}
+          <a class="clear" href="#/library" aria-label="Show all pages"><X size={14} /> All pages</a>
+        {/if}
+      </div>
+      <SearchField bind:value={query} bind:input={searchInput} placeholder="Search your library" shortcut="/" />
+      <Segmented options={FILTERS} bind:value={filter} label="Filter" />
+    </header>
+
+    {#if !ai.aiReady && documents.value.length > 0}
+      <div class="notice">
+        <Banner title="Summaries are off">
+          Choose a model so saved pages get summarised.
+          {#snippet action()}<Button size="sm" onclick={() => (location.hash = '#/settings')}>Settings</Button>{/snippet}
+        </Banner>
+      </div>
+    {:else if counts.failed}
+      <div class="notice">
+        <Banner tone="error" title="{counts.failed} page{counts.failed === 1 ? '' : 's'} couldn't be summarised">
+          Open a page to see why, or try again.
+          {#snippet action()}<Button size="sm" disabled={retrying} onclick={retryFailed}>Retry</Button>{/snippet}
+        </Banner>
+      </div>
     {/if}
-  </span>
+
+    <div class="rows">
+      {#if documents.value.length === 0}
+        <div class="empty">
+          <EmptyState title="Your library is empty">
+            {#snippet icon()}<BookmarkPlus size={18} />{/snippet}
+            Save any page with <Kbd keys="⌘⇧S" /> or the toolbar button. It will be summarised and searchable here.
+          </EmptyState>
+        </div>
+      {:else if visible.length === 0}
+        <p class="nothing">Nothing matches.</p>
+      {/if}
+
+      {#each groups as group (group.label)}
+        <GroupLabel label={group.label} />
+        {#each group.docs as doc (doc.id)}
+          {@const status = rowStatus(ai.get(doc.id))}
+          <div id="row-{doc.id}">
+            <ListRow
+              title={doc.title}
+              summary={hits?.get(doc.id) ? undefined : gists.value.get(doc.id)}
+              site={doc.siteName || new URL(doc.url).hostname}
+              status={status.label}
+              statusTone={status.tone}
+              selected={doc.id === selected?.id}
+              onselect={() => (selectedId = doc.id)}
+            />
+            {#if hits?.get(doc.id)}
+              {@const hit = hits.get(doc.id)!}
+              <div class="hit"><Passage text={hit.chunk.text} terms={hit.terms} maxChars={160} /></div>
+            {/if}
+          </div>
+        {/each}
+      {/each}
+    </div>
+  </div>
+
+  <section class="preview" aria-label="Preview">
+    {#if selected}
+      {#key selected.id}<DocPreview doc={selected} />{/key}
+    {:else if documents.value.length > 0}
+      <p class="nothing">Select a page to preview it.</p>
+    {/if}
+  </section>
 </div>
 
-{#if !ai.aiReady && documents.value.length > 0}
-  <p class="muted small notice">
-    Summaries and tags appear once you choose a model for “Understanding pages” in <a href="#/settings">Settings</a>.
-  </p>
-{/if}
-
-{#if documents.value.length === 0}
-  <div class="panel empty">
-    <p><strong>Your library is empty.</strong></p>
-    <p class="muted">
-      Save a page with the toolbar button, <kbd>⌘/Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>, or right-click → “Save page to
-      Summaryse”. Select text first to save it as a highlight.
-    </p>
-  </div>
-{:else}
-  <div class="toolbar">
-    <input class="input search" type="search" placeholder="Search your library" bind:value={query} />
-    <select class="input" bind:value={typeFilter} aria-label="Type">
-      <option value="">All types</option>
-      {#each types as type (type)}<option value={type}>{TYPE_LABELS[type]}</option>{/each}
-    </select>
-    <select class="input" bind:value={siteFilter} aria-label="Site">
-      <option value="">All sites</option>
-      {#each sites as site (site)}<option value={site}>{site}</option>{/each}
-    </select>
-    {#if tags.length}
-      <select class="input" bind:value={tagFilter} aria-label="Tag">
-        <option value="">All tags</option>
-        {#each tags as tag (tag)}<option value={tag}>{tag}</option>{/each}
-      </select>
-    {/if}
-  </div>
-
-  {#if visible.length === 0}
-    <p class="muted">Nothing matches.</p>
-  {/if}
-
-  <ul class="list">
-    {#each visible as doc (doc.id)}
-      {@const hit = hits?.get(doc.id)}
-      {@const insight = insights.value.get(doc.id)}
-      <li>
-        <a class="item" href={docHref(doc.id)}>
-          <div class="title-row">
-            <span class="title">{doc.title}</span>
-            <AiBadge status={ai.get(doc.id)} />
-          </div>
-          <div class="meta muted small">
-            {doc.siteName} · {TYPE_LABELS[doc.type]} · {formatDate(doc.capturedAt)}{doc.source === 'auto' ? ' · auto-saved' : ''}
-          </div>
-          {#if hit}
-            <Passage text={hit.chunk.text} terms={hit.terms} maxChars={240} />
-          {:else if insight?.tldr || doc.excerpt}
-            <p class="summary">{insight?.tldr || doc.excerpt}</p>
-          {/if}
-          {#if doc.tags.length}
-            <div class="tags">{#each doc.tags as tag (tag)}<span class="chip">{tag}</span>{/each}</div>
-          {/if}
-        </a>
-      </li>
-    {/each}
-  </ul>
-{/if}
-
 <style>
-  .header {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-3);
-  }
-  .notice {
-    margin: 0 0 var(--space-3);
-  }
-  .empty p {
-    margin: 0 0 var(--space-2);
-  }
-  kbd {
-    font: inherit;
-    font-size: 12px;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    padding: 0 4px;
-  }
-  .toolbar {
-    display: flex;
-    gap: var(--space-2);
-    margin-bottom: var(--space-4);
-    flex-wrap: wrap;
-  }
-  .search {
-    flex: 1;
-    min-width: 220px;
-  }
-  .list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .library {
     display: grid;
-    gap: var(--space-2);
+    grid-template-columns: 400px minmax(0, 1fr);
+    height: 100%;
   }
-  .item {
+  .list-pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-right: 1px solid var(--border);
+  }
+  .list-head {
     display: grid;
-    gap: var(--space-1);
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    color: inherit;
-    text-decoration: none;
-    transition: border-color 150ms var(--ease);
-  }
-  .item:hover {
-    border-color: var(--color-primary);
+    gap: 12px;
+    padding: 20px 20px 8px;
   }
   .title-row {
     display: flex;
-    gap: var(--space-2);
     align-items: center;
+    justify-content: space-between;
+    min-height: 30px;
   }
-  .title {
-    font-weight: 600;
+  .clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: var(--r-sm);
+    font-size: var(--text-sm);
+    color: var(--text-2);
+    text-decoration: none;
+  }
+  .clear:hover {
+    background: var(--hover);
+  }
+  .notice {
+    padding: 4px 12px;
+  }
+  .rows {
     flex: 1;
-  }
-  .summary {
-    margin: 0;
-    font-size: 13px;
-    color: var(--color-text-2);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .tags {
+    min-height: 0;
     display: flex;
-    gap: var(--space-1);
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    padding: 0 10px 12px;
+  }
+  .hit {
+    padding: 0 12px 8px;
+  }
+  .empty {
+    padding: 12px 2px;
+  }
+  .nothing {
+    padding: 16px 12px;
+    color: var(--text-3);
+  }
+  .preview {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 24px 44px 40px;
   }
 </style>

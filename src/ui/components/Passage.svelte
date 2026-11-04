@@ -22,8 +22,13 @@
 <style>
   .passage {
     margin: 0;
-    color: var(--color-text-2);
-    font-size: 13px;
+    color: var(--text-2);
+    font-size: var(--text-md);
     line-height: 1.55;
+  }
+  mark {
+    background: var(--highlight);
+    color: var(--text);
+    border-radius: 3px;
   }
 </style>

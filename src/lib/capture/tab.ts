@@ -43,15 +43,20 @@ function renderToast(text: string, isError: boolean) {
   const toast = document.createElement('div');
   toast.textContent = text;
   toast.setAttribute('role', 'status');
+  // Matches the Toast component (design/summaryse.pen): ink background, 12px radius.
   toast.style.cssText = [
     'position:fixed', 'bottom:24px', 'right:24px', 'z-index:2147483647', 'padding:10px 14px',
-    'border-radius:8px', 'font:500 13px/1.4 system-ui,-apple-system,sans-serif', 'color:#fff',
-    `background:${isError ? '#b91c1c' : '#0f766e'}`, 'box-shadow:0 4px 12px rgba(0,0,0,.2)',
-    'transition:opacity .2s', 'opacity:0',
+    'border-radius:12px', 'font:500 13px/1.4 system-ui,-apple-system,sans-serif',
+    `color:${isError ? '#F8A89C' : '#FFFFFF'}`, 'background:#1A1A19',
+    'box-shadow:0 6px 20px rgba(0,0,0,.18)', 'transition:opacity .15s, transform .15s',
+    'opacity:0', 'transform:translateY(4px)',
   ].join(';');
   root.appendChild(toast);
   document.documentElement.appendChild(host);
-  requestAnimationFrame(() => (toast.style.opacity = '1'));
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'none';
+  });
   setTimeout(() => {
     toast.style.opacity = '0';
     setTimeout(() => host.remove(), 250);

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { saveExtractedPage } from '../capture/save';
-import { db } from '../db/schema';
+import { db, type StoredInsight } from '../db/schema';
 import { exportJson, importJson } from './transfer';
 
 const markdown = Array.from({ length: 30 }, (_, i) => `Line ${i} on vector search and reciprocal rank fusion.`).join(' ');
@@ -15,7 +15,7 @@ describe('export and import', () => {
       { url: 'https://a.dev/x', title: 'RRF', excerpt: '', markdown, type: 'article', selection: 'rank fusion' },
       'manual',
     );
-    await db.insights.put({ docId, tldr: 'T', takeaways: [], facts: [], topics: [], entities: [], terms: [], model: 'm', createdAt: 1 });
+    await db.insights.put({ docId, tldr: 'T', takeaways: [], facts: [], topics: [], entities: [], terms: [], model: 'm', createdAt: 1 } as StoredInsight);
     const blob = await exportJson();
     const file = new File([await blob.text()], 'backup.json');
 

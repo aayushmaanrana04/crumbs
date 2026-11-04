@@ -1,183 +1,290 @@
 <script lang="ts">
+  import { tick } from 'svelte';
+  import ArrowUp from '@lucide/svelte/icons/arrow-up';
+  import MessageCircle from '@lucide/svelte/icons/message-circle';
   import { db } from '@/lib/db/schema';
-  import { ask, type AskTurn } from '@/lib/search/ask';
+  import { modelLabel } from '@/lib/library/ai-label';
+  import { ask, type AnswerSegment, type AskTurn } from '@/lib/search/ask';
   import Markdown from '@/ui/components/Markdown.svelte';
-  import Passage from '@/ui/components/Passage.svelte';
+  import Banner from '@/ui/kit/Banner.svelte';
+  import Button from '@/ui/kit/Button.svelte';
+  import Citation from '@/ui/kit/Citation.svelte';
+  import EmptyState from '@/ui/kit/EmptyState.svelte';
+  import IconButton from '@/ui/kit/IconButton.svelte';
+  import Inference from '@/ui/kit/Inference.svelte';
+  import Select from '@/ui/kit/Select.svelte';
+  import SourceCard from '@/ui/kit/SourceCard.svelte';
+  import Spinner from '@/ui/kit/Spinner.svelte';
   import { live } from '@/ui/live.svelte';
   import { docHref } from '@/ui/router.svelte';
 
-  const tags = live(async () => [...new Set((await db.documents.toArray()).flatMap((d) => d.tags))].sort(), []);
+  const tags = live(async () => {
+    const counts = new Map<string, number>();
+    for (const d of await db.documents.toArray()) for (const t of d.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+    return [...counts].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [] as [string, number][]);
+  const total = live(() => db.documents.count(), 0);
 
   let question = $state('');
   let scopeTag = $state('');
   let turns = $state<AskTurn[]>([]);
-  let asking = $state(false);
+  let pending = $state<string | null>(null);
   let error = $state('');
-  let openSource = $state<string | null>(null);
+  let activeSource = $state<string | null>(null);
+  let thread = $state<HTMLElement>();
+  let input = $state<HTMLTextAreaElement>();
 
-  async function submit(event: SubmitEvent) {
-    event.preventDefault();
+  /** Merge consecutive inference segments so the AI's own reasoning appears as one box. */
+  function blocks(segments: AnswerSegment[]): AnswerSegment[] {
+    const out: AnswerSegment[] = [];
+    for (const s of segments) {
+      const last = out.at(-1);
+      if (s.kind === 'inference' && last?.kind === 'inference') last.text = `${last.text}\n\n${s.text}`;
+      else out.push({ ...s });
+    }
+    return out;
+  }
+
+  const scopeLabel = (tag: string, count: number) => `${tag} · ${count} page${count === 1 ? '' : 's'}`;
+
+  async function submit() {
     const q = question.trim();
-    if (!q || asking) return;
-    asking = true;
+    if (!q || pending) return;
+    pending = q;
+    question = '';
     error = '';
+    await scrollToEnd();
     try {
-      const docIds = scopeTag
-        ? new Set(await db.documents.where('tags').equals(scopeTag).primaryKeys())
-        : undefined;
+      const docIds = scopeTag ? new Set(await db.documents.where('tags').equals(scopeTag).primaryKeys()) : undefined;
       turns = [...turns, await ask(q, turns, docIds)];
-      question = '';
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
+      question = q;
     } finally {
-      asking = false;
+      pending = null;
+      await scrollToEnd();
+      input?.focus();
     }
+  }
+
+  async function scrollToEnd() {
+    await tick();
+    thread?.scrollTo({ top: thread.scrollHeight, behavior: 'smooth' });
   }
 </script>
 
-<div class="header">
-  <h1 class="page-title">Ask</h1>
-  {#if turns.length}<button class="link-button" onclick={() => (turns = [])}>New conversation</button>{/if}
-</div>
+<div class="ask">
+  <header class="top">
+    <h1 class="page-title">Ask</h1>
+    <div class="controls">
+      {#if turns.length}<Button kind="ghost" size="sm" onclick={() => (turns = [])}>New conversation</Button>{/if}
+      <Select bind:value={scopeTag} aria-label="Scope">
+        <option value="">Whole library · {total.value} pages</option>
+        {#each tags.value as [tag, count] (tag)}<option value={tag}>{scopeLabel(tag, count)}</option>{/each}
+      </Select>
+    </div>
+  </header>
 
-{#each turns as turn, t (t)}
-  <article class="turn">
-    <p class="question">{turn.question}</p>
-    <div class="answer">
-      {#each turn.segments as segment, s (s)}
-        <div class="segment {segment.kind}">
-          {#if segment.kind === 'inference'}<span class="label small">Inference</span>{/if}
-          <Markdown source={segment.text} />
-          {#each segment.sources as n (n)}
-            <button
-              class="cite"
-              aria-label="Show source {n}"
-              onclick={() => (openSource = openSource === `${t}:${n}` ? null : `${t}:${n}`)}>{n}</button
-            >
+  <div class="thread" bind:this={thread}>
+    <div class="column">
+      {#if turns.length === 0 && !pending}
+        <EmptyState title="Ask your library">
+          {#snippet icon()}<MessageCircle size={18} />{/snippet}
+          Answers come from pages you've saved, with numbered sources. Try “What have I read about browser automation?”
+        </EmptyState>
+      {/if}
+
+      {#each turns as turn, t (t)}
+        <div class="question"><p>{turn.question}</p></div>
+        <div class="answer">
+          {#each blocks(turn.segments) as segment, s (s)}
+            {#if segment.kind === 'inference'}
+              <Inference><Markdown source={segment.text} size="compact" /></Inference>
+            {:else}
+              <div class="paragraph">
+                <Markdown source={segment.text} size="compact" />
+                <span class="cites">
+                  {#each segment.sources as n (n)}
+                    <Citation {n} active={activeSource === `${t}:${n}`} onclick={() => (activeSource = activeSource === `${t}:${n}` ? null : `${t}:${n}`)} />
+                  {/each}
+                </span>
+              </div>
+            {/if}
           {/each}
+
+          {#if turn.sources.length}
+            <div class="sources">
+              {#each turn.sources as hit, i (hit.chunk.id)}
+                <SourceCard
+                  n={i + 1}
+                  title={hit.doc.title}
+                  site={hit.doc.siteName || new URL(hit.doc.url).hostname}
+                  href={docHref(hit.doc.id, { start: hit.chunk.charStart, end: hit.chunk.charEnd })}
+                  active={activeSource === `${t}:${i + 1}`}
+                />
+              {/each}
+            </div>
+            <p class="meta">
+              {turn.mode === 'hybrid' ? 'Matched by keyword and meaning' : 'Matched by keyword'} · {modelLabel(turn.model)}
+            </p>
+          {:else}
+            <p class="meta">No saved pages matched this question.</p>
+          {/if}
         </div>
       {/each}
+
+      {#if pending}
+        <div class="question"><p>{pending}</p></div>
+        <div class="thinking"><Spinner /> Reading your sources…</div>
+      {/if}
     </div>
-
-    {#if turn.sources.length}
-      <details class="sources" open={openSource?.startsWith(`${t}:`)}>
-        <summary class="muted small">{turn.sources.length} sources · {turn.mode === 'hybrid' ? 'keyword + meaning' : 'keyword'} · {turn.model}</summary>
-        <ol>
-          {#each turn.sources as hit, i (hit.chunk.id)}
-            <li class:active={openSource === `${t}:${i + 1}`}>
-              <a href={docHref(hit.doc.id, { start: hit.chunk.charStart, end: hit.chunk.charEnd })}>{hit.doc.title}</a>
-              <Passage text={hit.chunk.text} terms={hit.terms} maxChars={300} />
-            </li>
-          {/each}
-        </ol>
-      </details>
-    {:else}
-      <p class="muted small">No passages in your library matched this question.</p>
-    {/if}
-  </article>
-{/each}
-
-<form class="composer" onsubmit={submit}>
-  <textarea
-    class="input"
-    rows="2"
-    placeholder={turns.length ? 'Ask a follow-up' : 'e.g. What have I learned about browser automation agents?'}
-    bind:value={question}
-    onkeydown={(e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        e.currentTarget.form?.requestSubmit();
-      }
-    }}
-  ></textarea>
-  <div class="row">
-    <select class="input" bind:value={scopeTag} aria-label="Scope">
-      <option value="">Whole library</option>
-      {#each tags.value as tag (tag)}<option value={tag}>Tag: {tag}</option>{/each}
-    </select>
-    <button class="btn btn-primary" disabled={asking || !question.trim()}>{asking ? 'Thinking…' : 'Ask'}</button>
   </div>
-  {#if error}<p class="error-text small">{error}</p>{/if}
-</form>
+
+  <div class="composer-wrap">
+    <div class="column">
+      {#if error}
+        <div class="error"><Banner tone="error" title="Couldn't answer">{error}</Banner></div>
+      {/if}
+      <form
+        class="composer"
+        onsubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <textarea
+          bind:this={input}
+          bind:value={question}
+          rows="1"
+          placeholder={turns.length ? 'Ask a follow-up…' : 'Ask anything about what you have saved…'}
+          aria-label="Question"
+          onkeydown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+        ></textarea>
+        <IconButton label="Ask" variant="primary" type="submit" disabled={!question.trim() || !!pending}><ArrowUp /></IconButton>
+      </form>
+    </div>
+  </div>
+</div>
 
 <style>
-  .header {
+  .ask {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
+    flex-direction: column;
+    height: 100%;
   }
-  .turn {
-    margin-bottom: var(--space-6);
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 28px 12px;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .thread {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 8px 28px 24px;
+  }
+  .column {
+    max-width: 720px;
+    margin: 0 auto;
   }
   .question {
-    font-weight: 600;
-    font-size: 15px;
-    margin: 0 0 var(--space-3);
+    display: flex;
+    justify-content: flex-end;
+    margin: 24px 0 16px;
+  }
+  .question p {
+    max-width: 460px;
+    margin: 0;
+    padding: 11px 16px;
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    font-size: var(--text-base);
+    line-height: 1.5;
   }
   .answer {
     display: grid;
-    gap: var(--space-2);
+    gap: 14px;
   }
-  .segment {
-    position: relative;
+  .paragraph {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
   }
-  .segment :global(.markdown) {
-    display: inline;
+  .paragraph :global(.markdown) {
+    flex: 1;
+    font-size: 15px;
+    line-height: 1.65;
   }
-  .segment :global(.markdown > p:first-child) {
-    display: inline;
-  }
-  .inference {
-    border-left: 3px dashed var(--color-border);
-    padding-left: var(--space-3);
-    color: var(--color-text-2);
-  }
-  .label {
-    display: block;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-size: 10px;
-    color: var(--color-text-3);
-  }
-  .cite {
-    border: none;
-    background: color-mix(in srgb, var(--color-primary) 15%, transparent);
-    color: var(--color-primary);
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 0 5px;
-    margin-left: 2px;
-    cursor: pointer;
-    vertical-align: super;
+  .cites {
+    display: flex;
+    gap: 4px;
+    padding-top: 4px;
   }
   .sources {
-    margin-top: var(--space-3);
-  }
-  .sources ol {
-    padding-left: var(--space-5);
     display: grid;
-    gap: var(--space-2);
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 8px;
   }
-  .sources li.active {
-    background: var(--color-surface);
-    border-radius: var(--radius-sm);
+  .meta {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--text-3);
+  }
+  .thinking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-md);
+    color: var(--text-2);
+  }
+  .composer-wrap {
+    padding: 0 28px 20px;
+  }
+  .error {
+    margin-bottom: 10px;
   }
   .composer {
-    position: sticky;
-    bottom: 0;
-    background: var(--color-bg);
-    padding: var(--space-3) 0;
-    display: grid;
-    gap: var(--space-2);
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    padding: 10px 10px 10px 16px;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  }
+  .composer:focus-within {
+    border-color: var(--text-3);
   }
   textarea {
-    resize: vertical;
+    flex: 1;
+    min-height: 30px;
+    max-height: 160px;
+    padding: 5px 0;
+    border: none;
+    background: none;
+    font-size: var(--text-base);
+    line-height: 1.45;
+    resize: none;
+    field-sizing: content;
   }
-  .row {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--space-2);
+  textarea::placeholder {
+    color: var(--text-3);
+  }
+  textarea:focus {
+    outline: none;
   }
 </style>

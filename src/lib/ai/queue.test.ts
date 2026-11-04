@@ -20,13 +20,15 @@ fakeBrowser.action = { setBadgeText: async () => {}, setBadgeBackgroundColor: as
 
 const { drainQueue } = await import('./queue');
 
+const emptyBlock = { title: '', items: [], columns: [], rows: [], series: [], unit: '', code: '', lang: '', text: '', by: '', tone: 'none' };
 const insight = {
-  tldr: 'Local-first apps keep data on the device.',
-  takeaways: ['Data lives locally'],
-  facts: [],
-  topics: ['Local First', 'storage'],
+  kind: 'opinion',
+  gist: 'Local-first apps keep the primary copy of your data on your device.',
+  keyPoints: ['IndexedDB makes large local storage practical in browsers.'],
+  blocks: [{ ...emptyBlock, type: 'list', title: 'Why it matters', items: [{ text: 'Apps keep working offline.', code: '', lang: '' }] }],
+  note: '',
+  tags: ['Local First', 'storage'],
   entities: [{ name: 'IndexedDB', type: 'technology' }],
-  terms: ['CRDT'],
 };
 const markdown = Array.from({ length: 40 }, (_, i) => `Sentence ${i} about local-first software and IndexedDB.`).join(' ');
 
@@ -57,7 +59,8 @@ describe('job queue', () => {
     await drainQueue();
 
     expect(complete.mock.calls[0]![1]).toMatchObject({ model: 'small', effort: 'low' });
-    expect((await db.insights.get(docId))?.tldr).toBe(insight.tldr);
+    const stored = await db.insights.get(docId);
+    expect(stored).toMatchObject({ version: 2, kind: 'opinion', gist: insight.gist });
     const doc = await db.documents.get(docId);
     expect(doc?.tags).toEqual(['local-first', 'storage']);
     const chunks = await db.chunks.where('docId').equals(docId).count();
@@ -102,5 +105,21 @@ describe('job queue', () => {
     await save();
     await drainQueue();
     expect(complete).not.toHaveBeenCalled();
+  });
+});
+
+describe('tag reuse', () => {
+  it('tells the model which tags the library already uses', async () => {
+    complete.mockResolvedValue({ text: '{}', json: insight, model: 'small' });
+    embed.mockImplementation(async (_c, _m, texts) => texts.map(() => [1]));
+    const first = await save();
+    await db.documents.update(first.docId, { tags: ['accessibility-trees'] });
+    await drainQueue();
+    complete.mockClear();
+    const other = Array.from({ length: 40 }, (_, i) => `Line ${i} on browser agents and accessibility snapshots.`).join(' ');
+    await saveExtractedPage({ url: 'https://b.dev/2', title: 'B', excerpt: '', markdown: other, type: 'article', selection: '' }, 'manual');
+    await drainQueue();
+    const prompts = complete.mock.calls.map(([, request]) => request.prompt);
+    expect(prompts.some((p) => p.includes('Tags already used in this library: accessibility-trees'))).toBe(true);
   });
 });

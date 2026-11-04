@@ -1,111 +1,162 @@
 <script lang="ts">
+  import Search from '@lucide/svelte/icons/search';
   import { isSemanticSearchConfigured, searchPassages, type SearchResult } from '@/lib/search/search';
   import Passage from '@/ui/components/Passage.svelte';
-  import { formatDate } from '@/ui/format';
+  import { formatRelative } from '@/ui/format';
+  import Banner from '@/ui/kit/Banner.svelte';
+  import EmptyState from '@/ui/kit/EmptyState.svelte';
+  import SearchField from '@/ui/kit/SearchField.svelte';
+  import Spinner from '@/ui/kit/Spinner.svelte';
   import { docHref } from '@/ui/router.svelte';
 
   let query = $state('');
   let result = $state<SearchResult | null>(null);
   let searching = $state(false);
   let error = $state('');
-  const semantic = isSemanticSearchConfigured();
+  let semanticReady = $state(false);
 
-  async function run(event: SubmitEvent) {
-    event.preventDefault();
-    if (!query.trim()) return;
+  $effect(() => {
+    isSemanticSearchConfigured().then((v) => (semanticReady = v));
+  });
+
+  // Keyword results update as you type (free, local). Meaning-based search calls the
+  // embedding provider, so it only runs when you press Enter.
+  $effect(() => {
+    const q = query.trim();
+    if (!q) {
+      result = null;
+      return;
+    }
+    const timer = setTimeout(() => run(false), 200);
+    return () => clearTimeout(timer);
+  });
+
+  async function run(semantic: boolean) {
+    const q = query.trim();
+    if (!q) return;
     searching = true;
     error = '';
     try {
-      result = await searchPassages(query, { limit: 25 });
+      const r = await searchPassages(q, { limit: 25, semantic });
+      if (query.trim() === q) result = r;
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     } finally {
       searching = false;
     }
   }
+
+  const strength = (relevance: number) => (relevance > 0.7 ? 'Strong match' : relevance > 0.4 ? 'Match' : 'Weak match');
 </script>
 
-<h1 class="page-title">Search</h1>
-
-<form class="bar" onsubmit={run}>
-  <input class="input" type="search" placeholder="e.g. where did I read about DOM segmentation?" bind:value={query} />
-  <button class="btn btn-primary" disabled={searching}>{searching ? 'Searching…' : 'Search'}</button>
-</form>
-
-{#await semantic then enabled}
-  {#if !enabled}
-    <p class="muted small">
-      Keyword search only. Choose a model for “Search by meaning” in <a href="#/settings">Settings</a> to also find passages
-      by meaning.
+<div class="search-page">
+  <div class="column">
+    <h1 class="page-title">Search</h1>
+    <SearchField
+      bind:value={query}
+      autofocus
+      placeholder="Where did I read about DOM segmentation?"
+      shortcut={semanticReady ? 'Enter' : undefined}
+      onsubmit={() => run(semanticReady)}
+    />
+    <p class="mode">
+      {#if searching}
+        <Spinner size={10} /> Searching…
+      {:else if result}
+        {result.hits.length} passage{result.hits.length === 1 ? '' : 's'} · {result.mode === 'hybrid'
+          ? 'by keyword and meaning'
+          : 'by keyword'}
+        {#if semanticReady && result.mode === 'keyword'}· press Enter to also search by meaning{/if}
+      {:else if !semanticReady}
+        Searching by keyword. <a href="#/settings">Choose an embedding model</a> to also search by meaning.
+      {/if}
     </p>
-  {/if}
-{/await}
 
-{#if error}<p class="error-text">{error}</p>{/if}
+    {#if error}<Banner tone="error" title="Search failed">{error}</Banner>{/if}
+    {#if result?.semanticError}
+      <Banner tone="error" title="Meaning-based search failed">Showing keyword results. {result.semanticError}</Banner>
+    {/if}
 
-{#if result}
-  {#if result.semanticError}
-    <p class="error-text small">Meaning-based search failed, showing keyword results: {result.semanticError}</p>
-  {/if}
-  <p class="muted small">
-    {result.hits.length} passage{result.hits.length === 1 ? '' : 's'} · {result.mode === 'hybrid' ? 'keyword + meaning' : 'keyword'}
-  </p>
-  <ul class="results">
-    {#each result.hits as hit (hit.chunk.id)}
-      <li class="panel">
-        <div class="top">
-          <a class="title" href={docHref(hit.doc.id, { start: hit.chunk.charStart, end: hit.chunk.charEnd })}>{hit.doc.title}</a>
-          <span class="relevance" title="Relevance {Math.round(hit.relevance * 100)}%">
-            <span style:width="{Math.round(hit.relevance * 100)}%"></span>
-          </span>
-        </div>
-        <Passage text={hit.chunk.text} terms={hit.terms} />
-        <div class="muted small">
-          <a href={hit.doc.url} target="_blank" rel="noopener noreferrer">{hit.doc.siteName}</a> · saved {formatDate(hit.doc.capturedAt)}
-        </div>
-      </li>
-    {/each}
-  </ul>
-{/if}
+    {#if !query.trim()}
+      <EmptyState title="Find anything you've saved">
+        {#snippet icon()}<Search size={18} />{/snippet}
+        Search passages across every page, highlight and note. Results link to the exact spot.
+      </EmptyState>
+    {:else if result && result.hits.length === 0 && !searching}
+      <p class="none">No passages match “{query.trim()}”.</p>
+    {/if}
+
+    {#if result}
+      <ol class="results">
+        {#each result.hits as hit (hit.chunk.id)}
+          <li>
+            <a class="result" href={docHref(hit.doc.id, { start: hit.chunk.charStart, end: hit.chunk.charEnd })}>
+              <span class="title">{hit.doc.title}</span>
+              <Passage text={hit.chunk.text} terms={hit.terms} />
+              <span class="meta">
+                {hit.doc.siteName || new URL(hit.doc.url).hostname} · saved {formatRelative(hit.doc.capturedAt).toLowerCase()} · {strength(hit.relevance)}
+              </span>
+            </a>
+          </li>
+        {/each}
+      </ol>
+    {/if}
+  </div>
+</div>
 
 <style>
-  .bar {
+  .search-page {
+    height: 100%;
+    overflow-y: auto;
+    padding: 24px 28px 48px;
+  }
+  .column {
+    display: grid;
+    gap: 14px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .mode {
     display: flex;
-    gap: var(--space-2);
-    margin-bottom: var(--space-2);
+    align-items: center;
+    gap: 6px;
+    margin: -4px 0 0;
+    min-height: 18px;
+    font-size: var(--text-sm);
+    color: var(--text-3);
+  }
+  .mode a {
+    color: var(--text-2);
+    text-underline-offset: 2px;
+  }
+  .none {
+    color: var(--text-3);
   }
   .results {
-    list-style: none;
+    display: grid;
+    gap: 2px;
+    margin: 0;
     padding: 0;
-    margin: var(--space-3) 0 0;
-    display: grid;
-    gap: var(--space-2);
+    list-style: none;
   }
-  .results li {
+  .result {
     display: grid;
-    gap: var(--space-2);
+    gap: 5px;
+    padding: 12px 14px;
+    border-radius: var(--r-md);
+    text-decoration: none;
+    color: inherit;
+    transition: background var(--dur) var(--ease);
   }
-  .top {
-    display: flex;
-    gap: var(--space-3);
-    align-items: center;
-    justify-content: space-between;
+  .result:hover {
+    background: var(--hover);
   }
   .title {
-    font-weight: 600;
-    text-decoration: none;
+    font-size: var(--text-base);
+    font-weight: 500;
   }
-  .relevance {
-    width: 60px;
-    height: 4px;
-    border-radius: var(--radius-pill);
-    background: var(--color-border);
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-  .relevance span {
-    display: block;
-    height: 100%;
-    background: var(--color-primary);
+  .meta {
+    font-size: var(--text-sm);
+    color: var(--text-3);
   }
 </style>

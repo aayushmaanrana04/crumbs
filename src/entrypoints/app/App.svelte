@@ -1,45 +1,110 @@
 <script lang="ts">
-  import { router, type Route } from '@/ui/router.svelte';
+  import Inbox from '@lucide/svelte/icons/inbox';
+  import MessageCircle from '@lucide/svelte/icons/message-circle';
+  import Search from '@lucide/svelte/icons/search';
+  import SettingsIcon from '@lucide/svelte/icons/settings';
+  import Waypoints from '@lucide/svelte/icons/waypoints';
+  import { db } from '@/lib/db/schema';
+  import GroupLabel from '@/ui/kit/GroupLabel.svelte';
+  import NavItem from '@/ui/kit/NavItem.svelte';
+  import { live } from '@/ui/live.svelte';
+  import { router } from '@/ui/router.svelte';
   import AskView from '@/ui/views/AskView.svelte';
   import DocumentView from '@/ui/views/DocumentView.svelte';
   import Library from '@/ui/views/Library.svelte';
-  import Placeholder from '@/ui/views/Placeholder.svelte';
+  import Research from '@/ui/views/Research.svelte';
   import SearchView from '@/ui/views/SearchView.svelte';
   import Settings from '@/ui/views/Settings.svelte';
+
+  const TOP_TAGS = 5;
+
+  const library = live(async () => {
+    const docs = await db.documents.toArray();
+    const counts = new Map<string, number>();
+    for (const d of docs) for (const t of d.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+    // Only tags shared by several pages are useful as quick filters.
+    const tags = [...counts]
+      .filter(([, n]) => n >= 2)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, TOP_TAGS);
+    return { count: docs.length, tags };
+  }, { count: 0, tags: [] as [string, number][] });
+
+  let storageUsed = $state('');
+  $effect(() => {
+    void library.value.count;
+    navigator.storage?.estimate().then(({ usage = 0 }) => {
+      storageUsed = usage > 1e6 ? `${(usage / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(usage / 1e3))} KB`;
+    });
+  });
 
   function parsePassage(value: string | null) {
     const match = value?.match(/^(\d+)-(\d+)$/);
     return match ? { start: Number(match[1]), end: Number(match[2]) } : undefined;
   }
 
-  const NAV: { route: Route; label: string }[] = [
-    { route: 'library', label: 'Library' },
-    { route: 'search', label: 'Search' },
-    { route: 'research', label: 'Research' },
-    { route: 'ask', label: 'Ask' },
-  ];
+  function onkeydown(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      location.hash = '#/search';
+    }
+  }
+
+  const activeTag = $derived(router.route === 'library' ? router.query.get('tag') : null);
 </script>
+
+<svelte:window {onkeydown} />
 
 <div class="shell">
   <nav class="sidebar" aria-label="Main">
-    <div class="brand">Summaryse</div>
-    {#each NAV as item (item.route)}
-      <a
-        href="#/{item.route}"
-        class="nav-item"
-        aria-current={router.route === item.route || (item.route === 'library' && router.route === 'doc') ? 'page' : undefined}
-      >
-        {item.label}
-      </a>
-    {/each}
-    <a href="#/settings" class="nav-item settings" aria-current={router.route === 'settings' ? 'page' : undefined}>
-      Settings
-    </a>
+    <div class="workspace">
+      <span class="monogram" aria-hidden="true">S</span>
+      <span class="name">Summaryse</span>
+    </div>
+
+    <NavItem
+      href="#/library"
+      label="Library"
+      count={library.value.count || undefined}
+      active={(router.route === 'library' && !activeTag) || router.route === 'doc'}
+    >
+      {#snippet icon()}<Inbox />{/snippet}
+    </NavItem>
+    <NavItem href="#/search" label="Search" active={router.route === 'search'}>
+      {#snippet icon()}<Search />{/snippet}
+    </NavItem>
+    <NavItem href="#/ask" label="Ask" active={router.route === 'ask'}>
+      {#snippet icon()}<MessageCircle />{/snippet}
+    </NavItem>
+    <NavItem href="#/research" label="Research" active={router.route === 'research'}>
+      {#snippet icon()}<Waypoints />{/snippet}
+    </NavItem>
+
+    {#if library.value.tags.length}
+      <GroupLabel label="Tags" />
+      {#each library.value.tags as [tag, count] (tag)}
+        <NavItem href="#/library?tag={encodeURIComponent(tag)}" label={tag} {count} active={activeTag === tag}>
+          {#snippet icon()}<span class="tag-mark" aria-hidden="true"></span>{/snippet}
+        </NavItem>
+      {/each}
+    {/if}
+
+    <div class="spacer"></div>
+
+    <div class="storage">
+      <span class="storage-title">Stored on this device</span>
+      <span class="storage-detail">
+        {library.value.count} page{library.value.count === 1 ? '' : 's'}{storageUsed ? ` · ${storageUsed}` : ''}
+      </span>
+    </div>
+    <NavItem href="#/settings" label="Settings" active={router.route === 'settings'}>
+      {#snippet icon()}<SettingsIcon />{/snippet}
+    </NavItem>
   </nav>
 
-  <main class="content" class:wide={router.route === 'doc'}>
+  <main class="panel">
     {#if router.route === 'library'}
-      <Library />
+      <Library tag={activeTag} />
     {:else if router.route === 'doc'}
       <!-- Re-mount per document and per cited passage, so a citation link always lands on the passage. -->
       {#key `${router.param}?${router.query}`}
@@ -48,7 +113,7 @@
     {:else if router.route === 'search'}
       <SearchView />
     {:else if router.route === 'research'}
-      <Placeholder title="Research" description="Projects, topics and the knowledge graph." />
+      <Research />
     {:else if router.route === 'ask'}
       <AskView />
     {:else}
@@ -60,49 +125,75 @@
 <style>
   .shell {
     display: grid;
-    grid-template-columns: 200px 1fr;
-    min-height: 100vh;
+    grid-template-columns: 228px minmax(0, 1fr);
+    gap: 10px;
+    height: 100vh;
+    padding: 10px;
   }
   .sidebar {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
-    padding: var(--space-4) var(--space-3);
-    background: var(--color-surface);
-    border-right: 1px solid var(--color-border);
-    position: sticky;
-    top: 0;
-    height: 100vh;
+    gap: 2px;
+    min-height: 0;
+    padding: 6px 0 0;
+    overflow-y: auto;
   }
-  .brand {
+  .workspace {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 18px;
+  }
+  .monogram {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .name {
+    font-size: var(--text-base);
     font-weight: 600;
-    font-size: 16px;
-    padding: var(--space-2) var(--space-3) var(--space-4);
   }
-  .nav-item {
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    color: var(--color-text-2);
-    text-decoration: none;
+  .tag-mark {
+    width: 16px;
+    display: inline-flex;
+    justify-content: center;
+  }
+  .tag-mark::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-3);
+  }
+  .spacer {
+    flex: 1;
+  }
+  .storage {
+    display: grid;
+    gap: 1px;
+    padding: 12px 10px;
+    font-size: var(--text-sm);
+  }
+  .storage-title {
     font-weight: 500;
+    color: var(--text-2);
   }
-  .nav-item:hover {
-    color: var(--color-text);
+  .storage-detail {
+    color: var(--text-3);
   }
-  .nav-item[aria-current='page'] {
-    color: var(--color-text);
-    background: var(--color-bg);
-    box-shadow: var(--shadow-1);
-  }
-  .settings {
-    margin-top: auto;
-  }
-  .content {
-    padding: var(--space-8);
-    max-width: 960px;
+  .panel {
     min-width: 0;
-  }
-  .content.wide {
-    max-width: 1240px;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: var(--r-lg);
+    background: var(--bg);
+    box-shadow: var(--shadow-panel);
   }
 </style>

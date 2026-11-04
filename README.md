@@ -16,6 +16,8 @@ Phases 0–3 are done:
 - **Ask** questions across your library, with citations to the exact passage, and the AI's own inferences marked separately.
 - **Providers** with your own key: OpenAI, Anthropic, Google Gemini, OpenRouter and Ollama, plus Chrome built-in AI. Each task (understanding, Ask, search) can use a different model.
 
+- **Design:** the "Soft neutral" design system, with light and dark modes following the system. See [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) and `design/summaryse.pen`.
+
 Research (projects and the knowledge graph) is next; see the plan.
 
 ## Development
@@ -56,7 +58,8 @@ src/
     rpc/            typed messaging between pages and the background
     settings/       chrome.storage-backed settings
     text/           chunking utilities
-  ui/               Svelte components, views and router
+  ui/kit/           design-system components (mirrors design/summaryse.pen)
+  ui/               feature components, views and router
   assets/           design tokens (see DESIGN_SYSTEM.md)
 ```
 

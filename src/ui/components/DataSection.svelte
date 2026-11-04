@@ -1,6 +1,9 @@
 <script lang="ts">
   import { rpc } from '@/lib/rpc/client';
   import { download, exportJson, exportMarkdownZip, importJson } from '@/lib/library/transfer';
+  import Button from '@/ui/kit/Button.svelte';
+  import SettingsGroup from '@/ui/kit/SettingsGroup.svelte';
+  import SettingsRow from '@/ui/kit/SettingsRow.svelte';
 
   let message = $state('');
   let error = $state('');
@@ -23,28 +26,38 @@
   }
 </script>
 
-<section>
-  <h2 class="section-title">Your data</h2>
-  <p class="muted small intro">Everything is stored in this browser. Export regularly if you want a backup.</p>
-  <div class="row">
-    <button class="btn" onclick={async () => download(await exportJson(), `summaryse-${stamp()}.json`)}>Export backup (JSON)</button>
-    <button class="btn" onclick={async () => download(await exportMarkdownZip(), `summaryse-${stamp()}.zip`)}>Export as Markdown</button>
-    <label class="btn">
-      Import backup
-      <input type="file" accept="application/json,.json" onchange={onImport} hidden />
-    </label>
-  </div>
-  {#if message}<p class="small">{message}</p>{/if}
-  {#if error}<p class="error-text small">{error}</p>{/if}
-</section>
+<SettingsGroup title="Your data" description="Everything is stored in this browser. Export regularly if you want a backup.">
+  <SettingsRow title="Backup" detail="Everything, including summaries and highlights, as one JSON file.">
+    {#snippet control()}
+      <Button size="sm" onclick={async () => download(await exportJson(), `summaryse-${stamp()}.json`)}>Export</Button>
+      <label class="import">
+        Import
+        <input type="file" accept="application/json,.json" onchange={onImport} hidden />
+      </label>
+    {/snippet}
+  </SettingsRow>
+  <SettingsRow title="Markdown" detail="One file per page, for Obsidian or any notes app.">
+    {#snippet control()}
+      <Button size="sm" onclick={async () => download(await exportMarkdownZip(), `summaryse-${stamp()}.zip`)}>Export</Button>
+    {/snippet}
+  </SettingsRow>
+  {#if message || error}
+    <SettingsRow title={error ? 'Import failed' : 'Import complete'} detail={error || message} />
+  {/if}
+</SettingsGroup>
 
 <style>
-  .intro {
-    margin: 0 0 var(--space-3);
+  .import {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
   }
-  .row {
-    display: flex;
-    gap: var(--space-2);
-    flex-wrap: wrap;
+  .import:hover {
+    background: var(--hover);
   }
 </style>

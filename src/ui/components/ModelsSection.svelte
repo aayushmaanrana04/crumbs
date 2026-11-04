@@ -4,6 +4,10 @@
   import { rpc } from '@/lib/rpc/client';
   import { providerSettings } from '@/lib/settings/providers';
   import { TASKS, taskSettings, type TaskModel, type TaskName } from '@/lib/settings/tasks';
+  import Input from '@/ui/kit/Input.svelte';
+  import Select from '@/ui/kit/Select.svelte';
+  import SettingsGroup from '@/ui/kit/SettingsGroup.svelte';
+  import SettingsRow from '@/ui/kit/SettingsRow.svelte';
   import { stored } from '@/ui/storage.svelte';
 
   const providers = stored(providerSettings);
@@ -49,92 +53,41 @@
   }
 </script>
 
-<section>
-  <h2 class="section-title">Models</h2>
-  <p class="muted small intro">Choose which provider and model handles each kind of work. Only enabled providers appear here.</p>
+<SettingsGroup title="Models" description="Which provider and model handles each kind of work. Only enabled providers appear.">
   {#if tasks.value}
-    <div class="tasks">
-      {#each TASKS as task (task.name)}
-        {@const setting = tasks.value[task.name]}
-        {@const options = candidates(task.needs)}
-        <div class="panel task">
-          <div>
-            <div class="name">{task.label}</div>
-            <div class="muted small">{task.description}</div>
-          </div>
+    {#each TASKS as task (task.name)}
+      {@const setting = tasks.value[task.name]}
+      {@const options = candidates(task.needs)}
+      {@const list = setting.provider ? models[setting.provider] : undefined}
+      {@const choices = setting.provider ? modelOptions(setting.provider, task.needs) : []}
+      <SettingsRow title={task.label} detail={task.description}>
+        {#snippet control()}
           {#if options.length === 0}
-            <p class="muted small">
-              {task.needs === 'embeddings'
-                ? 'Enable OpenAI, Gemini or Ollama above to search by meaning.'
-                : 'Enable and test a provider above first.'}
-            </p>
+            <span class="faint small">{task.needs === 'embeddings' ? 'Needs OpenAI, Gemini or Ollama' : 'Enable a provider first'}</span>
           {:else}
-            <div class="pickers">
-              <select
-                class="input"
-                aria-label="{task.label} provider"
-                value={setting.provider}
-                onchange={(e) => update(task.name, { provider: e.currentTarget.value as ProviderKind | '' })}
-              >
-                <option value="">Off</option>
-                {#each options as kind (kind)}<option value={kind}>{PROVIDER_INFO[kind].label}</option>{/each}
-              </select>
-              {#if setting.provider}
-                {@const list = models[setting.provider]}
-                {#if typeof list === 'string'}
-                  <span class="error-text small">{list}</span>
-                {:else}
-                  {@const choices = modelOptions(setting.provider, task.needs)}
-                  {#if choices.length}
-                    <select
-                      class="input"
-                      aria-label="{task.label} model"
-                      value={setting.model}
-                      onchange={(e) => update(task.name, { model: e.currentTarget.value })}
-                    >
-                      <option value="" disabled>Choose a model</option>
-                      {#each choices as m (m.id)}<option value={m.id}>{m.name && m.name !== m.id ? `${m.name} (${m.id})` : m.id}</option>{/each}
-                    </select>
-                  {:else}
-                    <input
-                      class="input"
-                      placeholder="Model id"
-                      value={setting.model}
-                      onchange={(e) => update(task.name, { model: e.currentTarget.value.trim() })}
-                    />
-                  {/if}
-                {/if}
-              {/if}
-            </div>
+            <Select
+              aria-label="{task.label} provider"
+              value={setting.provider}
+              onchange={(e) => update(task.name, { provider: e.currentTarget.value as ProviderKind | '' })}
+            >
+              <option value="">Off</option>
+              {#each options as kind (kind)}<option value={kind}>{PROVIDER_INFO[kind].label}</option>{/each}
+            </Select>
           {/if}
-        </div>
-      {/each}
-    </div>
+        {/snippet}
+        {#if setting.provider && options.length}
+          {#if typeof list === 'string'}
+            <span class="error-text small">{list}</span>
+          {:else if choices.length}
+            <Select aria-label="{task.label} model" value={setting.model} onchange={(e) => update(task.name, { model: e.currentTarget.value })}>
+              <option value="" disabled>Choose a model</option>
+              {#each choices as m (m.id)}<option value={m.id}>{m.name && m.name !== m.id ? `${m.name} (${m.id})` : m.id}</option>{/each}
+            </Select>
+          {:else}
+            <Input placeholder="Model id" value={setting.model} onchange={(e) => update(task.name, { model: e.currentTarget.value.trim() })} />
+          {/if}
+        {/if}
+      </SettingsRow>
+    {/each}
   {/if}
-</section>
-
-<style>
-  .intro {
-    margin: 0 0 var(--space-3);
-  }
-  .tasks {
-    display: grid;
-    gap: var(--space-3);
-  }
-  .task {
-    display: grid;
-    gap: var(--space-3);
-  }
-  .name {
-    font-weight: 600;
-  }
-  .pickers {
-    display: flex;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .task p {
-    margin: 0;
-  }
-</style>
+</SettingsGroup>

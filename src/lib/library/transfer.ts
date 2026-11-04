@@ -2,7 +2,8 @@
 // your library in other tools (e.g. Obsidian). Passages and embeddings are rebuilt on import.
 import { strToU8, zipSync } from 'fflate';
 import { z } from 'zod';
-import { db, type KnowledgeDocument } from '../db/schema';
+import { db, normalizeInsight, type KnowledgeDocument } from '../db/schema';
+import { insightToMarkdown } from './insight-markdown';
 import { rebuildChunks } from './documents';
 import { enqueueJobs } from './jobs';
 
@@ -39,7 +40,7 @@ export async function exportMarkdownZip(): Promise<Blob> {
     db.highlights.toArray(),
     db.insights.toArray(),
   ]);
-  const insightById = new Map(insights.map((i) => [i.docId, i]));
+  const insightById = new Map(insights.map((i) => [i.docId, normalizeInsight(i)]));
   const files: Record<string, Uint8Array> = {};
   const used = new Set<string>();
 
@@ -60,8 +61,7 @@ export async function exportMarkdownZip(): Promise<Blob> {
       '',
       `# ${doc.title}`,
       '',
-      insight ? `> ${insight.tldr}\n` : '',
-      insight?.takeaways.length ? `## Key takeaways\n\n${insight.takeaways.map((t) => `- ${t}`).join('\n')}\n` : '',
+      insight ? `${insightToMarkdown(insight)}\n` : '',
       docHighlights.length ? `## Highlights\n\n${docHighlights.map((h) => `> ${h.text}`).join('\n\n')}\n` : '',
       doc.userNotes ? `## Notes\n\n${doc.userNotes}\n` : '',
       '## Content\n',

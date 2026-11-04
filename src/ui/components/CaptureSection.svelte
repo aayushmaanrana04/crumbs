@@ -8,6 +8,11 @@
     type CaptureSettings,
   } from '@/lib/settings/capture';
   import { stored } from '@/ui/storage.svelte';
+  import X from '@lucide/svelte/icons/x';
+  import Button from '@/ui/kit/Button.svelte';
+  import Input from '@/ui/kit/Input.svelte';
+  import SettingsGroup from '@/ui/kit/SettingsGroup.svelte';
+  import SettingsRow from '@/ui/kit/SettingsRow.svelte';
 
   const settings = stored(captureSettings);
   let blockDraft = $state('');
@@ -53,76 +58,76 @@
   }
 </script>
 
-<section>
-  <h2 class="section-title">Capture</h2>
-  <p class="muted small intro">
-    Pages are only saved when you ask, or on sites you turn auto-capture on for. Incognito windows are never saved.
-  </p>
+<SettingsGroup
+  title="Capture"
+  description="Pages are saved only when you ask, or on sites you turn auto-capture on for. Incognito windows are never saved."
+>
   {#if settings.value}
-    <div class="panel group">
-      <div class="name">Auto-capture</div>
-      <div class="muted small">On these sites, pages are saved automatically once you've spent time reading them.</div>
-      <ul>
-        {#each settings.value.autoCaptureSites as site (site)}
-          <li><span>{site}</span><button class="link-button" onclick={() => removeAuto(site)}>Remove</button></li>
-        {/each}
-      </ul>
+    <SettingsRow title="Auto-capture" detail="Save pages automatically once you've spent time reading them.">
+      {#if settings.value.autoCaptureSites.length}
+        <ul class="sites">
+          {#each settings.value.autoCaptureSites as site (site)}
+            <li><span>{site}</span><button type="button" aria-label="Remove {site}" onclick={() => removeAuto(site)}><X size={14} /></button></li>
+          {/each}
+        </ul>
+      {/if}
       <form class="add" onsubmit={(e) => (e.preventDefault(), addAuto())}>
-        <input class="input" placeholder="e.g. developer.mozilla.org" bind:value={autoDraft} />
-        <button class="btn">Add site</button>
+        <Input placeholder="e.g. developer.mozilla.org" bind:value={autoDraft} />
+        <Button type="submit">Add site</Button>
       </form>
-      {#if error}<p class="error-text small">{error}</p>{/if}
-    </div>
-
-    <div class="panel group">
-      <div class="name">Never save</div>
-      <div class="muted small">Pages from these sites are never saved, even when you click save.</div>
-      <ul>
-        {#each settings.value.blockedSites as site (site)}
-          <li>
-            <span>{site}</span>
-            <button class="link-button" onclick={() => save({ blockedSites: settings.value!.blockedSites.filter((s) => s !== site) })}>
-              Remove
-            </button>
-          </li>
-        {/each}
-      </ul>
+      {#if error}<span class="error-text small">{error}</span>{/if}
+    </SettingsRow>
+    <SettingsRow title="Never save" detail="Pages from these sites are never saved, even when you click save.">
+      {#if settings.value.blockedSites.length}
+        <ul class="sites">
+          {#each settings.value.blockedSites as site (site)}
+            <li>
+              <span>{site}</span>
+              <button type="button" aria-label="Remove {site}" onclick={() => save({ blockedSites: settings.value!.blockedSites.filter((s) => s !== site) })}><X size={14} /></button>
+            </li>
+          {/each}
+        </ul>
+      {/if}
       <form class="add" onsubmit={(e) => (e.preventDefault(), addBlocked())}>
-        <input class="input" placeholder="e.g. example.com" bind:value={blockDraft} />
-        <button class="btn">Block site</button>
+        <Input placeholder="e.g. example.com" bind:value={blockDraft} />
+        <Button type="submit">Block site</Button>
       </form>
-    </div>
+    </SettingsRow>
   {/if}
-</section>
+</SettingsGroup>
 
 <style>
-  .intro {
-    margin: 0 0 var(--space-3);
-  }
-  .group {
+  .sites {
     display: grid;
-    gap: var(--space-2);
-    margin-bottom: var(--space-3);
-  }
-  .name {
-    font-weight: 600;
-  }
-  ul {
-    list-style: none;
-    padding: 0;
+    gap: 2px;
     margin: 0;
-    display: grid;
-    gap: var(--space-1);
+    padding: 0;
+    list-style: none;
   }
   li {
     display: flex;
+    align-items: center;
     justify-content: space-between;
+    padding: 6px 4px 6px 12px;
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    font-size: var(--text-md);
+  }
+  li button {
+    display: inline-flex;
+    padding: 4px;
+    border: none;
+    border-radius: var(--r-xs);
+    background: none;
+    color: var(--text-3);
+    cursor: pointer;
+  }
+  li button:hover {
+    background: var(--hover);
+    color: var(--text);
   }
   .add {
     display: flex;
-    gap: var(--space-2);
-  }
-  p {
-    margin: 0;
+    gap: 8px;
   }
 </style>

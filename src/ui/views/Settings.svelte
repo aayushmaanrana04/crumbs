@@ -4,38 +4,37 @@
   import CaptureSection from '@/ui/components/CaptureSection.svelte';
   import DataSection from '@/ui/components/DataSection.svelte';
   import ModelsSection from '@/ui/components/ModelsSection.svelte';
-  import ProviderCard from '@/ui/components/ProviderCard.svelte';
+  import ProviderRow from '@/ui/components/ProviderRow.svelte';
+  import SettingsGroup from '@/ui/kit/SettingsGroup.svelte';
 </script>
 
-<h1 class="page-title">Settings</h1>
-
-<section>
-  <h2 class="section-title">AI providers</h2>
-  <p class="muted small intro">
-    Bring your own API key. Keys are stored only in this browser and sent only to the provider they belong to.
-  </p>
-  <div class="cards">
-    {#each PROVIDER_KINDS as kind (kind)}
-      <ProviderCard {kind} />
-    {/each}
+<div class="settings">
+  <div class="column">
+    <h1 class="page-title">Settings</h1>
+    <SettingsGroup
+      title="AI providers"
+      description="Bring your own API key. Keys stay in this browser and are only sent to the provider they belong to."
+    >
+      {#each PROVIDER_KINDS as kind (kind)}<ProviderRow {kind} />{/each}
+    </SettingsGroup>
+    <ModelsSection />
+    <CaptureSection />
+    <DataSection />
+    <ActivitySection />
   </div>
-</section>
-
-<ModelsSection />
-<CaptureSection />
-<DataSection />
-<ActivitySection />
+</div>
 
 <style>
-  .intro {
-    margin: 0 0 var(--space-3);
+  .settings {
+    height: 100%;
+    overflow-y: auto;
+    padding: 24px 28px 56px;
+    background: var(--canvas);
   }
-  .cards {
+  .column {
     display: grid;
-    gap: var(--space-3);
-  }
-  :global(.content > section),
-  section {
-    margin-bottom: var(--space-8);
+    gap: 32px;
+    max-width: 680px;
+    margin: 0 auto;
   }
 </style>

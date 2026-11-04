@@ -23,6 +23,8 @@ export interface KnowledgeDocument {
   excerpt: string;
   /** How it was saved: a click/shortcut/menu, or auto-capture. */
   source: 'manual' | 'auto';
+  /** When the full page was last opened in Summaryse; unset means unread. */
+  readAt?: number;
   userNotes: string;
   tags: string[];
   projectIds: string[];
@@ -46,8 +48,53 @@ export interface Embedding {
   vector: Float32Array;
 }
 
+/** What kind of page this is; decides which blocks the summary uses. */
+export type PageKind =
+  | 'docs'
+  | 'tutorial'
+  | 'repo'
+  | 'data'
+  | 'research'
+  | 'comparison'
+  | 'release'
+  | 'pricing'
+  | 'discussion'
+  | 'news'
+  | 'opinion'
+  | 'other';
+
+/** One structured part of a summary. Unused fields are empty so the shape works with strict JSON schemas. */
+export type InsightBlock =
+  | { type: 'steps'; title: string; items: { text: string; code: string; lang: string }[] }
+  | { type: 'table'; title: string; columns: string[]; rows: string[][] }
+  | { type: 'chart'; title: string; unit: string; series: { label: string; value: number }[] }
+  | { type: 'list'; title: string; items: string[] }
+  | { type: 'code'; title: string; lang: string; code: string }
+  | { type: 'quote'; text: string; by: string }
+  | { type: 'callout'; tone: 'warning' | 'info'; text: string };
+
+/** AI summary of a saved page (format v2). */
 export interface Insight {
   docId: string;
+  version: 2;
+  kind: PageKind;
+  /** One sentence, point first. Shown in the Library list. */
+  gist: string;
+  keyPoints: string[];
+  blocks: InsightBlock[];
+  /** Something important missing from the saved text, or empty. */
+  note: string;
+  /** Suggested broad tags; applied to pages the user hasn't tagged. */
+  tags: string[];
+  entities: { name: string; type: EntityType }[];
+  model: string;
+  createdAt: number;
+}
+
+/** Format v1, still stored for pages summarised before v2 until they're re-summarised. */
+export interface LegacyInsight {
+  docId: string;
+  version?: undefined;
   tldr: string;
   takeaways: string[];
   facts: string[];
@@ -56,6 +103,26 @@ export interface Insight {
   terms: string[];
   model: string;
   createdAt: number;
+}
+
+export type StoredInsight = Insight | LegacyInsight;
+
+/** Read any stored insight as v2, so the UI only handles one shape. */
+export function normalizeInsight(raw: StoredInsight): Insight {
+  if (raw.version === 2) return raw;
+  return {
+    docId: raw.docId,
+    version: 2,
+    kind: 'other',
+    gist: raw.tldr,
+    keyPoints: raw.takeaways,
+    blocks: raw.facts.length ? [{ type: 'list', title: 'Facts and figures', items: raw.facts }] : [],
+    note: '',
+    tags: raw.topics,
+    entities: raw.entities.filter((e) => e.type !== 'concept'),
+    model: raw.model,
+    createdAt: raw.createdAt,
+  };
 }
 
 export type EntityType = 'concept' | 'technology' | 'person' | 'company' | 'product' | 'project';
@@ -147,7 +214,7 @@ export class KnowledgeDB extends Dexie {
   documents!: EntityTable<KnowledgeDocument, 'id'>;
   chunks!: EntityTable<Chunk, 'id'>;
   embeddings!: Dexie.Table<Embedding, [string, string]>;
-  insights!: EntityTable<Insight, 'docId'>;
+  insights!: EntityTable<StoredInsight, 'docId'>;
   entities!: EntityTable<Entity, 'id'>;
   entityAliases!: EntityTable<EntityAlias, 'alias'>;
   mentions!: EntityTable<Mention, 'id'>;

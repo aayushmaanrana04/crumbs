@@ -6,6 +6,7 @@ import {
   retryFailedJobs,
   updateBadge,
 } from '@/lib/ai/queue';
+import { outdatedInsightDocIds } from '@/lib/ai/insights';
 import { embedTexts, runTask } from '@/lib/ai/run';
 import { captureTab, describeOutcome, showToast, syncAutoCaptureScripts } from '@/lib/capture/tab';
 import { db, getLibraryStats } from '@/lib/db/schema';
@@ -63,7 +64,12 @@ export default defineBackground(() => {
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === 'jobs') void drainQueue();
   });
-  void recoverInterruptedJobs().then(drainQueue);
+  void recoverInterruptedJobs()
+    .then(async () => {
+      // Summaries from an older format are regenerated in the background (jobs wait if no model is set).
+      for (const docId of await outdatedInsightDocIds()) await enqueueJobs(docId, ['insights']);
+    })
+    .then(drainQueue);
 
   providerSettings.watch(() => void updateBadge().then(drainQueue));
   taskSettings.watch(async (next, previous) => {
