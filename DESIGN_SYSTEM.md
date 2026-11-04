@@ -1,6 +1,6 @@
 # Summaryse design system: Soft neutral
 
-Source of truth: `design/summaryse.pen` (open in Pen). Left: **Components · Soft neutral**, 55 components with their states and a dark-mode check. Right: **Screens · Soft neutral**, principles and example screens.
+Source of truth: `design/summaryse.pen` (open in Pen). Left: **Components · Soft neutral**, 55 components with their states and a dark-mode check. Right: **Screens · Soft neutral**, principles and example screens. **Phase 4 · Side panel & projects** has the side panel states and the project screens.
 
 Code: tokens in `src/assets/tokens.css`, components in `src/ui/kit/` (one Svelte file per Pen component).
 
@@ -46,6 +46,8 @@ Light and dark follow the system setting (`prefers-color-scheme`).
 | Reading | `Property` · `SectionHeading` · `NumberedPoint` · `Tag` · `RelatedCard` · `HighlightCard` |
 | Ask | `Citation` · `Inference` ("Not from your sources") · `SourceCard` |
 | Feedback and settings | `Banner` (info, error) · `EmptyState` · `SkeletonRow` · `SettingsGroup` · `SettingsRow` |
+| Projects | `ProjectChip` · `ProjectPicker` (checkboxes plus “New project…”) · `Suggestion` (Add / Not now, never automatic) · `QuestionItem` |
+| Summary blocks | `CodeBlock` (with copy) · `DataTable` · `BarChart` · `Callout` (info, warning) · steps and quotes in `InsightBlocks` · gist and note in `DocInsights` |
 
 ## Rules of thumb
 

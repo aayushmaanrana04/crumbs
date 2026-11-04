@@ -35,11 +35,13 @@ function frontmatterValue(value: string): string {
 }
 
 export async function exportMarkdownZip(): Promise<Blob> {
-  const [documents, highlights, insights] = await Promise.all([
+  const [documents, highlights, insights, projects] = await Promise.all([
     db.documents.toArray(),
     db.highlights.toArray(),
     db.insights.toArray(),
+    db.projects.toArray(),
   ]);
+  const projectName = new Map(projects.map((p) => [p.id, p.name]));
   const insightById = new Map(insights.map((i) => [i.docId, normalizeInsight(i)]));
   const files: Record<string, Uint8Array> = {};
   const used = new Set<string>();
@@ -57,6 +59,9 @@ export async function exportMarkdownZip(): Promise<Blob> {
       `url: ${frontmatterValue(doc.url)}`,
       `saved: ${new Date(doc.capturedAt).toISOString()}`,
       `tags: [${doc.tags.map(frontmatterValue).join(', ')}]`,
+      ...(doc.projectIds.length
+        ? [`projects: [${doc.projectIds.map((id) => frontmatterValue(projectName.get(id) ?? id)).join(', ')}]`]
+        : []),
       '---',
       '',
       `# ${doc.title}`,

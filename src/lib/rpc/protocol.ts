@@ -1,4 +1,5 @@
 import type { SaveOutcome } from '../capture/save';
+import type { PagePreview } from '../capture/tab';
 import type { LibraryStats } from '../db/schema';
 import type { CompletionRequest, CompletionResult, ModelInfo, ProviderKind } from '../providers/types';
 import type { TaskName } from '../settings/tasks';
@@ -11,6 +12,8 @@ export interface RpcMethods {
   'ai.embedQuery': { args: { text: string }; result: { space: string; vector: number[] } };
   'capture.activeTab': { args: Record<string, never>; result: SaveOutcome };
   'capture.tab': { args: { tabId: number }; result: SaveOutcome };
+  /** Read a tab for the side panel without saving it; null when it can't be read. */
+  'capture.preview': { args: { tabId: number }; result: PagePreview | null };
   /** Sent by the auto-capture content script once the user has read the page. */
   'capture.auto': { args: Record<string, never>; result: SaveOutcome | null };
   'jobs.run': { args: Record<string, never>; result: void };

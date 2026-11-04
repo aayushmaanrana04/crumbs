@@ -69,6 +69,32 @@ export async function showToast(tabId: number, text: string, isError = false): P
     .catch(() => undefined); // Restricted pages can't show it; the action badge still updates.
 }
 
+export interface PagePreview {
+  url: string;
+  title: string;
+  siteName?: string;
+  excerpt: string;
+  /** Opening text, for matching and as context for quick ask. */
+  lead: string;
+}
+
+const LEAD_CHARS = 6000;
+
+/** Read a tab without saving it, for the side panel. Null when the page can't or mustn't be read. */
+export async function previewTab(tabId: number): Promise<PagePreview | null> {
+  const tab = await browser.tabs.get(tabId);
+  if (tab.incognito || !tab.url || !isCapturableUrl(tab.url)) return null;
+  if (isBlocked(tab.url, await captureSettings.getValue())) return null;
+  try {
+    const [injection] = await browser.scripting.executeScript({ target: { tabId }, files: ['/extract.js'] });
+    const page = injection?.result as ExtractedPage | undefined;
+    if (!page) return null;
+    return { url: page.url, title: page.title, siteName: page.siteName, excerpt: page.excerpt, lead: page.markdown.slice(0, LEAD_CHARS) };
+  } catch {
+    return null; // No access to this tab (opened without a click, or a restricted page).
+  }
+}
+
 const AUTO_SCRIPT_ID = 'summaryse-autocapture';
 
 /** Register the auto-capture script for every opted-in site we still have access to. */

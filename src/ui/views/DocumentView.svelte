@@ -13,6 +13,7 @@
   import { aiStatuses } from '@/ui/ai-status.svelte';
   import AiStatus from '@/ui/components/AiStatus.svelte';
   import DocInsights from '@/ui/components/DocInsights.svelte';
+  import DocProjects from '@/ui/components/DocProjects.svelte';
   import Markdown from '@/ui/components/Markdown.svelte';
   import TagEditor from '@/ui/components/TagEditor.svelte';
   import { findPassage } from '@/ui/find-text';
@@ -174,6 +175,11 @@
       </article>
 
       <aside class="rail">
+        <section>
+          <h2 class="rail-title">Projects</h2>
+          <DocProjects {docId} />
+        </section>
+
         <section>
           <h2 class="rail-title">Tags</h2>
           <TagEditor tags={d.tags} onchange={(tags) => updateDocument(docId, { tags })} />

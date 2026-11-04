@@ -53,11 +53,37 @@ export function validateSegments(raw: AnswerSegment[], sourceCount: number): Ans
     });
 }
 
-export async function ask(question: string, history: AskTurn[], docIds?: Set<string>): Promise<AskTurn> {
+/** A page that isn't (necessarily) in the library, used as an extra source, e.g. the tab open beside the side panel. */
+export interface ExtraSource {
+  title: string;
+  url: string;
+  text: string;
+}
+
+const EXTRA_SOURCE_CHARS = 6000;
+
+/** Present an extra page in the same shape as a retrieved passage, so citations work the same way. */
+function extraHit(extra: ExtraSource): PassageHit {
+  const text = extra.text.slice(0, EXTRA_SOURCE_CHARS);
+  return {
+    doc: {
+      id: '', url: extra.url, canonicalUrl: '', title: extra.title, siteName: new URL(extra.url).hostname, capturedAt: 0, updatedAt: 0,
+      type: 'other', markdown: text, contentHash: '', simhash: '', excerpt: '', source: 'manual', userNotes: '', tags: [], projectIds: [],
+    },
+    chunk: { id: 'extra', docId: '', ordinal: 0, text, charStart: 0, charEnd: text.length },
+    relevance: 1,
+    terms: [],
+  };
+}
+
+export async function ask(question: string, history: AskTurn[], docIds?: Set<string>, extra?: ExtraSource): Promise<AskTurn> {
   // Follow-ups like "what about the second one?" retrieve better with the previous question attached.
   const previous = history.at(-1)?.question;
   const retrievalQuery = previous ? `${previous}\n${question}` : question;
-  const { hits, mode } = await searchPassages(retrievalQuery, { limit: PASSAGES, docIds });
+  const found = await searchPassages(retrievalQuery, { limit: extra ? PASSAGES - 1 : PASSAGES, docIds });
+  const mode = found.mode;
+  // The extra page goes first (source 1); drop its saved copy if retrieval also found it.
+  const hits = extra ? [extraHit(extra), ...found.hits.filter((h) => h.doc.url !== extra.url)] : found.hits;
 
   const sources = hits.map((hit, i) => wrapSource(i + 1, hit.doc.title, hit.chunk.text)).join('\n\n');
   const conversation = history

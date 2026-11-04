@@ -8,7 +8,11 @@ import {
 } from '@/lib/ai/queue';
 import { outdatedInsightDocIds } from '@/lib/ai/insights';
 import { embedTexts, runTask } from '@/lib/ai/run';
-import { captureTab, describeOutcome, showToast, syncAutoCaptureScripts } from '@/lib/capture/tab';
+import { captureTab, describeOutcome, previewTab, showToast, syncAutoCaptureScripts } from '@/lib/capture/tab';
+import { hostnameOf, isCapturableUrl } from '@/lib/capture/url';
+import { relatedCount } from '@/lib/library/page-context';
+import { panelSettings } from '@/lib/settings/panel';
+import { siteMatches } from '@/lib/settings/capture';
 import { db, getLibraryStats } from '@/lib/db/schema';
 import { enqueueJobs } from '@/lib/library/jobs';
 import { PROVIDER_INFO } from '@/lib/providers/catalog';
@@ -38,7 +42,30 @@ async function saveFromUserAction(tabId: number, selection?: string) {
   }
 }
 
+/** Follow mode: show how many saved pages relate to the active tab, on the toolbar badge. */
+async function updateTabBadge(tabId: number) {
+  const settings = await panelSettings.getValue();
+  if (!settings.follow || !(await browser.permissions.contains({ permissions: ['tabs'] }))) return;
+  const tab = await browser.tabs.get(tabId).catch(() => undefined);
+  if (!tab?.url || tab.incognito || !isCapturableUrl(tab.url)) return;
+  const host = hostnameOf(tab.url);
+  if (settings.pausedSites.some((s) => siteMatches(host, s))) {
+    await browser.action.setBadgeText({ tabId, text: '' });
+    return;
+  }
+  const count = await relatedCount({ url: tab.url, title: tab.title ?? '' });
+  await browser.action.setBadgeText({ tabId, text: count ? String(count) : '' });
+}
+
 export default defineBackground(() => {
+  // The toolbar button opens the side panel (there is no popup).
+  void browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => undefined);
+
+  browser.tabs.onActivated.addListener(({ tabId }) => void updateTabBadge(tabId));
+  browser.tabs.onUpdated.addListener((tabId, change) => {
+    if (change.status === 'complete') void updateTabBadge(tabId);
+  });
+
   browser.runtime.onInstalled.addListener(async ({ reason }) => {
     await browser.contextMenus.removeAll();
     browser.contextMenus.create({ id: 'save-page', title: 'Save page to Summaryse', contexts: ['page'] });
@@ -106,6 +133,9 @@ export default defineBackground(() => {
     },
     async 'capture.tab'({ tabId }) {
       return saveFromUserAction(tabId);
+    },
+    async 'capture.preview'({ tabId }) {
+      return previewTab(tabId);
     },
     async 'capture.auto'(_args, sender) {
       if (sender.tab?.id === undefined) return null;

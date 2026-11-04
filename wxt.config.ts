@@ -19,8 +19,13 @@ export default defineConfig({
         'scripting',
         'contextMenus',
         'alarms',
+        'sidePanel',
         ...(dev ? ['nativeMessaging'] : []),
       ],
+      // Follow mode only: lets the side panel see the active tab's address and title as you switch tabs.
+      optional_permissions: ['tabs'],
+      // The toolbar button opens the side panel (set in the background).
+      action: { default_title: 'Open Summaryse' },
       // Requested at runtime: provider hosts when a provider is tested, and
       // individual sites when the user turns on auto-capture for them.
       optional_host_permissions: [...PROVIDER_ORIGINS, 'https://*/*', 'http://*/*'],

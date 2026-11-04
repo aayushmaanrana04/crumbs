@@ -16,7 +16,7 @@
   import SourceCard from '@/ui/kit/SourceCard.svelte';
   import Spinner from '@/ui/kit/Spinner.svelte';
   import { live } from '@/ui/live.svelte';
-  import { docHref } from '@/ui/router.svelte';
+  import { docHref, router } from '@/ui/router.svelte';
 
   const tags = live(async () => {
     const counts = new Map<string, number>();
@@ -24,9 +24,14 @@
     return [...counts].sort((a, b) => a[0].localeCompare(b[0]));
   }, [] as [string, number][]);
   const total = live(() => db.documents.count(), 0);
+  const projects = live(async () => {
+    const list = await db.projects.orderBy('name').toArray();
+    return Promise.all(list.map(async (p) => ({ id: p.id, name: p.name, count: await db.documents.where('projectIds').equals(p.id).count() })));
+  }, [] as { id: string; name: string; count: number }[]);
 
   let question = $state('');
-  let scopeTag = $state('');
+  // "" = whole library, "tag:<name>" or "project:<id>". "Ask this project" links in with ?project=<id>.
+  let scope = $state(router.query.get('project') ? `project:${router.query.get('project')}` : '');
   let turns = $state<AskTurn[]>([]);
   let pending = $state<string | null>(null);
   let error = $state('');
@@ -55,7 +60,13 @@
     error = '';
     await scrollToEnd();
     try {
-      const docIds = scopeTag ? new Set(await db.documents.where('tags').equals(scopeTag).primaryKeys()) : undefined;
+      const [kind, value] = scope.split(/:(.*)/s);
+      const docIds =
+        kind === 'tag'
+          ? new Set(await db.documents.where('tags').equals(value!).primaryKeys())
+          : kind === 'project'
+            ? new Set(await db.documents.where('projectIds').equals(value!).primaryKeys())
+            : undefined;
       turns = [...turns, await ask(q, turns, docIds)];
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
@@ -78,9 +89,18 @@
     <h1 class="page-title">Ask</h1>
     <div class="controls">
       {#if turns.length}<Button kind="ghost" size="sm" onclick={() => (turns = [])}>New conversation</Button>{/if}
-      <Select bind:value={scopeTag} aria-label="Scope">
+      <Select bind:value={scope} aria-label="Scope">
         <option value="">Whole library · {total.value} pages</option>
-        {#each tags.value as [tag, count] (tag)}<option value={tag}>{scopeLabel(tag, count)}</option>{/each}
+        {#if projects.value.length}
+          <optgroup label="Projects">
+            {#each projects.value as p (p.id)}<option value="project:{p.id}">{scopeLabel(p.name, p.count)}</option>{/each}
+          </optgroup>
+        {/if}
+        {#if tags.value.length}
+          <optgroup label="Tags">
+            {#each tags.value as [tag, count] (tag)}<option value="tag:{tag}">{scopeLabel(tag, count)}</option>{/each}
+          </optgroup>
+        {/if}
       </Select>
     </div>
   </header>

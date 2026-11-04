@@ -1,4 +1,4 @@
-export const ROUTES = ['library', 'search', 'research', 'ask', 'settings', 'doc'] as const;
+export const ROUTES = ['library', 'search', 'projects', 'project', 'ask', 'settings', 'doc'] as const;
 export type Route = (typeof ROUTES)[number];
 
 interface RouteState {
@@ -11,7 +11,9 @@ interface RouteState {
 function parseHash(): RouteState {
   const [path = '', search = ''] = location.hash.replace(/^#\/?/, '').split('?');
   const [name = '', ...rest] = path.split('/');
-  const route = (ROUTES as readonly string[]).includes(name) ? (name as Route) : 'library';
+  // "research" was the old name of the projects page.
+  const known = name === 'research' ? 'projects' : name;
+  const route = (ROUTES as readonly string[]).includes(known) ? (known as Route) : 'library';
   return { route, param: decodeURIComponent(rest.join('/')), query: new URLSearchParams(search) };
 }
 

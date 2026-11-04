@@ -160,11 +160,24 @@ export interface Relation {
   quote: string;
 }
 
+export interface ProjectQuestion {
+  id: string;
+  text: string;
+  done: boolean;
+  createdAt: number;
+}
+
 export interface Project {
   id: string;
   name: string;
   description: string;
   createdAt: number;
+  updatedAt: number;
+  /** Notes and decisions, Markdown. */
+  notes: string;
+  questions: ProjectQuestion[];
+  /** Pages the user said "Not now" to, so they aren't suggested again. */
+  dismissed: string[];
 }
 
 export interface Highlight {
@@ -253,6 +266,20 @@ export class KnowledgeDB extends Dexie {
           .toCollection()
           .modify((doc: Record<string, unknown>) => {
             delete doc.status;
+          }),
+      );
+    // v4: projects gain notes, open questions and dismissed suggestions, sorted by updatedAt.
+    this.version(4)
+      .stores({ projects: 'id, name, updatedAt' })
+      .upgrade((tx) =>
+        tx
+          .table('projects')
+          .toCollection()
+          .modify((p: Record<string, unknown>) => {
+            p.updatedAt ??= p.createdAt;
+            p.notes ??= '';
+            p.questions ??= [];
+            p.dismissed ??= [];
           }),
       );
   }

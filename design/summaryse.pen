@@ -9128,6 +9128,1144 @@
         },
         {
           "type": "frame",
+          "id": "vOgy2",
+          "name": "Section Summary blocks",
+          "width": 1200,
+          "layout": "vertical",
+          "gap": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "kTQVc",
+              "name": "Section header",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pjtsy",
+                  "name": "Title",
+                  "fill": "$text",
+                  "content": "Summary blocks",
+                  "fontFamily": "$font",
+                  "fontSize": 20,
+                  "fontWeight": "600",
+                  "letterSpacing": -0.4
+                },
+                {
+                  "type": "text",
+                  "id": "SPlW3",
+                  "name": "Description",
+                  "fill": "$text-2",
+                  "content": "A summary is a gist, key points and up to four blocks chosen by page kind. Numbers, code and quotes are verified against the page before they're shown.",
+                  "fontFamily": "$font",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "EA9Oo",
+              "name": "Sheet",
+              "width": "fill_container",
+              "fill": "$bg",
+              "cornerRadius": "$r-xl",
+              "gap": 40,
+              "padding": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "qxAuc",
+                  "name": "Column 1",
+                  "width": 540,
+                  "layout": "vertical",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "EqZ9l",
+                      "name": "Gist",
+                      "reusable": true,
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lDdN4",
+                          "name": "Text",
+                          "fill": "$text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Handle SIGTERM so in-flight requests finish and resources close before Kubernetes sends SIGKILL.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "$font",
+                          "fontSize": 18,
+                          "fontWeight": "500",
+                          "letterSpacing": -0.2
+                        },
+                        {
+                          "type": "frame",
+                          "id": "QOfe6",
+                          "name": "Note",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "w3bA3C",
+                              "name": "Icon",
+                              "width": 13,
+                              "height": 13,
+                              "icon": "info",
+                              "library": "lucide",
+                              "fill": "$text-3"
+                            },
+                            {
+                              "type": "text",
+                              "id": "xfmxJ",
+                              "name": "Text",
+                              "fill": "$text-3",
+                              "content": "The Go code example is an image, so it isn't in the saved copy.",
+                              "fontFamily": "$font",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "h0tf5k",
+                      "name": "CodeBlock",
+                      "reusable": true,
+                      "clip": true,
+                      "width": "fill_container",
+                      "fill": "$surface",
+                      "cornerRadius": "$r-md",
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n9Uuq",
+                          "name": "Bar",
+                          "width": "fill_container",
+                          "padding": [
+                            6,
+                            8,
+                            0,
+                            14
+                          ],
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "b9mNH",
+                              "name": "Lang",
+                              "fill": "$text-3",
+                              "content": "kotlin",
+                              "fontFamily": "$font",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "CE81d",
+                              "name": "Copy",
+                              "cornerRadius": "$r-xs",
+                              "gap": 4,
+                              "padding": [
+                                3,
+                                8
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon",
+                                  "id": "SPuzc",
+                                  "name": "Icon",
+                                  "width": 12,
+                                  "height": 12,
+                                  "icon": "copy",
+                                  "library": "lucide",
+                                  "fill": "$text-2"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "N6YrOI",
+                                  "name": "Label",
+                                  "fill": "$text-2",
+                                  "content": "Copy",
+                                  "fontFamily": "$font",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "O4qMt",
+                          "name": "Code",
+                          "width": "fill_container",
+                          "padding": [
+                            6,
+                            14,
+                            12,
+                            14
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "qpRFG",
+                              "name": "Source",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "OnrampSDK.registerOnrampSDKEventListener(this)",
+                              "lineHeight": 1.55,
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 12.5,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "xGr3P",
+                      "name": "StepItem",
+                      "reusable": true,
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Ewxjh",
+                          "name": "Number",
+                          "width": 22,
+                          "height": 22,
+                          "fill": "$primary",
+                          "cornerRadius": 999,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "oRXHj",
+                              "name": "N",
+                              "fill": "$on-primary",
+                              "content": "1",
+                              "fontFamily": "$font",
+                              "fontSize": 11,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "O88BjE",
+                          "name": "Body",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "vh9CE",
+                              "name": "Text",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Register the event listener, implementing OnrampSDKEventListener on your activity.",
+                              "lineHeight": 1.55,
+                              "fontFamily": "$font",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "id": "KIBi0",
+                              "type": "ref",
+                              "ref": "h0tf5k",
+                              "name": "Code",
+                              "width": "fill_container"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "QAOWY",
+                      "name": "Callout / warning",
+                      "reusable": true,
+                      "width": "fill_container",
+                      "fill": "$surface",
+                      "cornerRadius": "$r-md",
+                      "gap": 10,
+                      "padding": [
+                        12,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "npJDK",
+                          "name": "Icon",
+                          "width": 15,
+                          "height": 15,
+                          "icon": "triangle-alert",
+                          "library": "lucide",
+                          "fill": "$error"
+                        },
+                        {
+                          "type": "text",
+                          "id": "M4CoW",
+                          "name": "Text",
+                          "fill": "$text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Each SDK instance maps to one widget, so re-initialise the SDK before reopening it.",
+                          "lineHeight": 1.55,
+                          "fontFamily": "$font",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "uEBdX",
+                      "name": "Callout / info",
+                      "reusable": true,
+                      "width": "fill_container",
+                      "fill": "$surface",
+                      "cornerRadius": "$r-md",
+                      "gap": 10,
+                      "padding": [
+                        12,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "IITsk",
+                          "name": "Icon",
+                          "width": 15,
+                          "height": 15,
+                          "icon": "info",
+                          "library": "lucide",
+                          "fill": "$text-2"
+                        },
+                        {
+                          "type": "text",
+                          "id": "B5GKa",
+                          "name": "Text",
+                          "fill": "$text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Combined with snapshots, segmentation works best on long documentation pages.",
+                          "lineHeight": 1.55,
+                          "fontFamily": "$font",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "kezT4",
+                      "name": "Quote",
+                      "reusable": true,
+                      "width": "fill_container",
+                      "stroke": "$hover",
+                      "strokeWidth": {
+                        "left": 3
+                      },
+                      "layout": "vertical",
+                      "gap": 6,
+                      "padding": [
+                        4,
+                        0,
+                        4,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "r0yL4",
+                          "name": "Text",
+                          "fill": "$text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "“When you hit a wall of complexity, you end up cutting corners just to get through it. Simplicity gives you leverage back.”",
+                          "lineHeight": 1.55,
+                          "fontFamily": "$font",
+                          "fontSize": 16,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "qHB0r",
+                          "name": "By",
+                          "fill": "$text-3",
+                          "content": "Sagar Jounkani",
+                          "fontFamily": "$font",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TTngT",
+                  "name": "Column 2",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SKIKf",
+                      "name": "DataTable",
+                      "reusable": true,
+                      "clip": true,
+                      "width": "fill_container",
+                      "cornerRadius": "$r-md",
+                      "stroke": "$border",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "w7dtMZ",
+                          "name": "Header",
+                          "width": "fill_container",
+                          "fill": "$surface",
+                          "gap": 16,
+                          "padding": [
+                            9,
+                            14
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "MnRLI",
+                              "name": "Cell 1",
+                              "fill": "$text-2",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Approach",
+                              "fontFamily": "$font",
+                              "fontSize": 12,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "NFo7p",
+                              "name": "Cell 2",
+                              "fill": "$text-2",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Accuracy",
+                              "fontFamily": "$font",
+                              "fontSize": 12,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "jGVi1",
+                              "name": "Cell 3",
+                              "fill": "$text-2",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Latency",
+                              "fontFamily": "$font",
+                              "fontSize": 12,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "eiEWi",
+                          "name": "Row 1",
+                          "width": "fill_container",
+                          "stroke": "$border",
+                          "strokeWidth": {
+                            "top": 1
+                          },
+                          "gap": 16,
+                          "padding": [
+                            9,
+                            14
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "hvRTL",
+                              "name": "Cell 1",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Decision primitive",
+                              "fontFamily": "$font",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "text",
+                              "id": "kOBCQ",
+                              "name": "Cell 2",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "16/18 (88.9%)",
+                              "fontFamily": "$font",
+                              "fontSize": 13
+                            },
+                            {
+                              "type": "text",
+                              "id": "Z0A2jt",
+                              "name": "Cell 3",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "185 ms",
+                              "fontFamily": "$font",
+                              "fontSize": 13
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "OV9Zg",
+                          "name": "Row 2",
+                          "width": "fill_container",
+                          "stroke": "$border",
+                          "strokeWidth": {
+                            "top": 1
+                          },
+                          "gap": 16,
+                          "padding": [
+                            9,
+                            14
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "eAwZ0",
+                              "name": "Cell 1",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "LLM judge",
+                              "fontFamily": "$font",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "text",
+                              "id": "kLZOH",
+                              "name": "Cell 2",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "14/18 (77.8%)",
+                              "fontFamily": "$font",
+                              "fontSize": 13
+                            },
+                            {
+                              "type": "text",
+                              "id": "f51eDa",
+                              "name": "Cell 3",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "1,363 ms",
+                              "fontFamily": "$font",
+                              "fontSize": 13
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "crSKK",
+                      "name": "BarChart",
+                      "reusable": true,
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "okWsL",
+                          "name": "Bar Snapshots",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ZhdSy",
+                              "name": "Label",
+                              "fill": "$text-2",
+                              "textGrowth": "fixed-width",
+                              "width": 120,
+                              "content": "Snapshots",
+                              "fontFamily": "$font",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "txf9J",
+                              "name": "Track",
+                              "clip": true,
+                              "width": "fill_container",
+                              "height": 10,
+                              "fill": "$surface",
+                              "cornerRadius": 999,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "rectangle",
+                                  "cornerRadius": 999,
+                                  "id": "zdh8T",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Fill",
+                                  "fill": "$primary",
+                                  "width": 204,
+                                  "height": 10
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "nlam4",
+                              "name": "Value",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": 44,
+                              "content": "68%",
+                              "textAlign": "right",
+                              "fontFamily": "$font",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "tqY9o",
+                          "name": "Bar Raw HTML",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "zAa2T",
+                              "name": "Label",
+                              "fill": "$text-2",
+                              "textGrowth": "fixed-width",
+                              "width": 120,
+                              "content": "Raw HTML",
+                              "fontFamily": "$font",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "Y2d7D",
+                              "name": "Track",
+                              "clip": true,
+                              "width": "fill_container",
+                              "height": 10,
+                              "fill": "$surface",
+                              "cornerRadius": 999,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "rectangle",
+                                  "cornerRadius": 999,
+                                  "id": "LU2zZ",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Fill",
+                                  "fill": "$primary",
+                                  "width": 123,
+                                  "height": 10
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "ohI0z",
+                              "name": "Value",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": 44,
+                              "content": "41%",
+                              "textAlign": "right",
+                              "fontFamily": "$font",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "aoCfn",
+                          "name": "Bar Segmented",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "SNthc",
+                              "name": "Label",
+                              "fill": "$text-2",
+                              "textGrowth": "fixed-width",
+                              "width": 120,
+                              "content": "Segmented",
+                              "fontFamily": "$font",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "rhKOm",
+                              "name": "Track",
+                              "clip": true,
+                              "width": "fill_container",
+                              "height": 10,
+                              "fill": "$surface",
+                              "cornerRadius": 999,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "rectangle",
+                                  "cornerRadius": 999,
+                                  "id": "ul6e2",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Fill",
+                                  "fill": "$primary",
+                                  "width": 186,
+                                  "height": 10
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "HlTzL",
+                              "name": "Value",
+                              "fill": "$text",
+                              "textGrowth": "fixed-width",
+                              "width": 44,
+                              "content": "62%",
+                              "textAlign": "right",
+                              "fontFamily": "$font",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GyP8K",
+                      "name": "Rules",
+                      "width": "fill_container",
+                      "fill": "$surface",
+                      "cornerRadius": "$r-md",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "StszY",
+                          "name": "Rule",
+                          "fill": "$text-2",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Steps: ink-filled numbers; code under a step is copied from the page.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "$font",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "QDwFA",
+                          "name": "Rule",
+                          "fill": "$text-2",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Table: first column bold, header on surface; numbers must appear in the page.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "$font",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "NJuNI",
+                          "name": "Rule",
+                          "fill": "$text-2",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Chart: monochrome bars for 2–10 values in the same unit; the value label carries the number.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "$font",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "if50c",
+                          "name": "Rule",
+                          "fill": "$text-2",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Callout: warning uses the red icon only; the text stays ink.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "$font",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "JIk5D",
+              "name": "Example · docs summary",
+              "width": "fill_container",
+              "fill": "$canvas",
+              "cornerRadius": "$r-xl",
+              "gap": 40,
+              "padding": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "e085t",
+                  "name": "About",
+                  "width": 260,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "p2u1lA",
+                      "name": "Title",
+                      "fill": "$text",
+                      "content": "Composed: a docs page",
+                      "fontFamily": "$font",
+                      "fontSize": 15,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "jgyW9",
+                      "name": "Body",
+                      "fill": "$text-2",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Kind “docs” → gist, key points, How to implement (steps with code), a parameters table and a warning. Built only from the components above.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "$font",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "WGGav",
+                  "name": "Summary card",
+                  "width": 720,
+                  "fill": "$bg",
+                  "cornerRadius": "$r-lg",
+                  "layout": "vertical",
+                  "gap": 24,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "id": "CFQIa",
+                      "type": "ref",
+                      "ref": "EqZ9l",
+                      "name": "Gist",
+                      "width": "fill_container",
+                      "descendants": {
+                        "lDdN4": {
+                          "content": "Integrate the Onramp Android SDK by calling startOnrampSDK, listening for widget events, and stopping the SDK when done."
+                        },
+                        "QOfe6": {
+                          "enabled": false
+                        }
+                      }
+                    },
+                    {
+                      "type": "rectangle",
+                      "id": "X7YIcP",
+                      "name": "Divider",
+                      "fill": "$border",
+                      "width": "fill_container",
+                      "height": 1
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JIUi0",
+                      "name": "Key points",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "id": "CmgmA",
+                          "type": "ref",
+                          "ref": "FP3fu",
+                          "name": "Heading",
+                          "descendants": {
+                            "eaqmR": {
+                              "content": "Key points"
+                            },
+                            "y7uo4": {
+                              "enabled": false
+                            }
+                          }
+                        },
+                        {
+                          "id": "AO7iH",
+                          "type": "ref",
+                          "ref": "KWb0d",
+                          "name": "Point 1",
+                          "width": "fill_container",
+                          "descendants": {
+                            "KEgGf": {
+                              "content": "1"
+                            },
+                            "UFtbL": {
+                              "content": "Requires minSdkVersion 21, compileSdkVersion 33 and the INTERNET permission."
+                            }
+                          }
+                        },
+                        {
+                          "id": "D6uRF2",
+                          "type": "ref",
+                          "ref": "KWb0d",
+                          "name": "Point 2",
+                          "width": "fill_container",
+                          "descendants": {
+                            "KEgGf": {
+                              "content": "2"
+                            },
+                            "UFtbL": {
+                              "content": "Transaction and widget events arrive through onDataReceived."
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "rectangle",
+                      "id": "mzSy2",
+                      "name": "Divider",
+                      "fill": "$border",
+                      "width": "fill_container",
+                      "height": 1
+                    },
+                    {
+                      "type": "frame",
+                      "id": "W7kN5",
+                      "name": "How to implement",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 14,
+                      "children": [
+                        {
+                          "id": "NaplO",
+                          "type": "ref",
+                          "ref": "FP3fu",
+                          "name": "Heading",
+                          "descendants": {
+                            "eaqmR": {
+                              "content": "How to implement"
+                            },
+                            "y7uo4": {
+                              "enabled": false
+                            }
+                          }
+                        },
+                        {
+                          "id": "Y22rLb",
+                          "type": "ref",
+                          "ref": "xGr3P",
+                          "name": "Step 1",
+                          "width": "fill_container",
+                          "descendants": {
+                            "oRXHj": {
+                              "content": "1"
+                            },
+                            "vh9CE": {
+                              "content": "Add the dependency to the app-level build.gradle."
+                            },
+                            "KIBi0/b9mNH": {
+                              "content": "groovy"
+                            },
+                            "KIBi0/qpRFG": {
+                              "content": "implementation 'money.onramp.onrampwebview:OnrampSDK:1.1.7'"
+                            }
+                          }
+                        },
+                        {
+                          "id": "ELQV2",
+                          "type": "ref",
+                          "ref": "xGr3P",
+                          "name": "Step 2",
+                          "width": "fill_container",
+                          "descendants": {
+                            "oRXHj": {
+                              "content": "2"
+                            },
+                            "vh9CE": {
+                              "content": "Start the SDK with your app ID, wallet address and flow options."
+                            },
+                            "KIBi0/b9mNH": {
+                              "content": "kotlin"
+                            },
+                            "KIBi0/qpRFG": {
+                              "content": "OnrampSDK.startOnrampSDK(context: this, appId: 1, flowtype: 1)"
+                            }
+                          }
+                        },
+                        {
+                          "id": "LyzAE",
+                          "type": "ref",
+                          "ref": "xGr3P",
+                          "name": "Step 3",
+                          "width": "fill_container",
+                          "descendants": {
+                            "oRXHj": {
+                              "content": "3"
+                            },
+                            "vh9CE": {
+                              "content": "Disable the SDK when you no longer need it."
+                            },
+                            "KIBi0/b9mNH": {
+                              "content": "kotlin"
+                            },
+                            "KIBi0/qpRFG": {
+                              "content": "OnrampSDK.stopOnrampSDK()"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "rectangle",
+                      "id": "M1MnYb",
+                      "name": "Divider",
+                      "fill": "$border",
+                      "width": "fill_container",
+                      "height": 1
+                    },
+                    {
+                      "type": "frame",
+                      "id": "khNqC",
+                      "name": "Parameters",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "u20nZs",
+                          "type": "ref",
+                          "ref": "FP3fu",
+                          "name": "Heading",
+                          "descendants": {
+                            "eaqmR": {
+                              "content": "Key startOnrampSDK parameters"
+                            },
+                            "y7uo4": {
+                              "enabled": false
+                            }
+                          }
+                        },
+                        {
+                          "id": "o8YI7",
+                          "type": "ref",
+                          "ref": "SKIKf",
+                          "name": "Table",
+                          "width": "fill_container",
+                          "descendants": {
+                            "MnRLI": {
+                              "content": "Parameter"
+                            },
+                            "NFo7p": {
+                              "content": "Values"
+                            },
+                            "jGVi1": {
+                              "content": "Meaning"
+                            },
+                            "hvRTL": {
+                              "content": "flowtype"
+                            },
+                            "kOBCQ": {
+                              "content": "1, 2, 3"
+                            },
+                            "Z0A2jt": {
+                              "content": "Onramp, offramp, merchant checkout"
+                            },
+                            "eAwZ0": {
+                              "content": "fiatType"
+                            },
+                            "kLZOH": {
+                              "content": "1, 2"
+                            },
+                            "f51eDa": {
+                              "content": "INR, TRY"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "id": "RWxUS",
+                      "type": "ref",
+                      "ref": "QAOWY",
+                      "name": "Warning",
+                      "width": "fill_container"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
           "id": "tRbZY",
           "name": "Section Dark mode",
           "width": "fill_container",

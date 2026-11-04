@@ -3,7 +3,7 @@
   import MessageCircle from '@lucide/svelte/icons/message-circle';
   import Search from '@lucide/svelte/icons/search';
   import SettingsIcon from '@lucide/svelte/icons/settings';
-  import Waypoints from '@lucide/svelte/icons/waypoints';
+  import Folder from '@lucide/svelte/icons/folder';
   import { db } from '@/lib/db/schema';
   import GroupLabel from '@/ui/kit/GroupLabel.svelte';
   import NavItem from '@/ui/kit/NavItem.svelte';
@@ -12,11 +12,13 @@
   import AskView from '@/ui/views/AskView.svelte';
   import DocumentView from '@/ui/views/DocumentView.svelte';
   import Library from '@/ui/views/Library.svelte';
-  import Research from '@/ui/views/Research.svelte';
+  import ProjectView from '@/ui/views/ProjectView.svelte';
+  import Projects from '@/ui/views/Projects.svelte';
   import SearchView from '@/ui/views/SearchView.svelte';
   import Settings from '@/ui/views/Settings.svelte';
 
   const TOP_TAGS = 5;
+  const TOP_PROJECTS = 6;
 
   const library = live(async () => {
     const docs = await db.documents.toArray();
@@ -27,8 +29,11 @@
       .filter(([, n]) => n >= 2)
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .slice(0, TOP_TAGS);
-    return { count: docs.length, tags };
-  }, { count: 0, tags: [] as [string, number][] });
+    const projects = await db.projects.orderBy('updatedAt').reverse().limit(TOP_PROJECTS).toArray();
+    const projectCounts = new Map<string, number>();
+    for (const d of docs) for (const p of d.projectIds) projectCounts.set(p, (projectCounts.get(p) ?? 0) + 1);
+    return { count: docs.length, tags, projects: projects.map((p) => ({ id: p.id, name: p.name, count: projectCounts.get(p.id) ?? 0 })) };
+  }, { count: 0, tags: [] as [string, number][], projects: [] as { id: string; name: string; count: number }[] });
 
   let storageUsed = $state('');
   $effect(() => {
@@ -76,9 +81,18 @@
     <NavItem href="#/ask" label="Ask" active={router.route === 'ask'}>
       {#snippet icon()}<MessageCircle />{/snippet}
     </NavItem>
-    <NavItem href="#/research" label="Research" active={router.route === 'research'}>
-      {#snippet icon()}<Waypoints />{/snippet}
+    <NavItem href="#/projects" label="Projects" active={router.route === 'projects'}>
+      {#snippet icon()}<Folder />{/snippet}
     </NavItem>
+
+    {#if library.value.projects.length}
+      <GroupLabel label="Projects" />
+      {#each library.value.projects as p (p.id)}
+        <NavItem href="#/project/{p.id}" label={p.name} count={p.count} active={router.route === 'project' && router.param === p.id}>
+          {#snippet icon()}<span class="tag-mark" aria-hidden="true"></span>{/snippet}
+        </NavItem>
+      {/each}
+    {/if}
 
     {#if library.value.tags.length}
       <GroupLabel label="Tags" />
@@ -112,8 +126,10 @@
       {/key}
     {:else if router.route === 'search'}
       <SearchView />
-    {:else if router.route === 'research'}
-      <Research />
+    {:else if router.route === 'projects'}
+      <Projects />
+    {:else if router.route === 'project'}
+      {#key router.param}<ProjectView projectId={router.param} />{/key}
     {:else if router.route === 'ask'}
       <AskView />
     {:else}
