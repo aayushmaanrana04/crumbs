@@ -1,37 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeTag } from '../library/documents';
-import { codeFromPage, gistProblems, overlap, refineInsight, type RawBlock, type RawInsight } from './insight-quality';
-
-describe('gistProblems', () => {
-  it('flags gists that describe the page instead of stating its point', () => {
-    for (const g of [
-      'The article argues that backends should handle SIGTERM.',
-      "Onramp's Android SDK documentation covers how to integrate the widget.",
-      'An interview-style Swiggy blog post profiles Sagar Jounkani.',
-      'This page explains graceful shutdown.',
-      'Harness engineers argue that agent loops should expose decisions.',
-    ]) {
-      expect(gistProblems(g), g).toContain('describes-the-page');
-    }
-  });
-
-  it('accepts point-first gists, including ones starting with a verb', () => {
-    for (const g of [
-      'Handle SIGTERM so in-flight requests finish before Kubernetes sends SIGKILL.',
-      'Embed the Onramp crypto widget in Android and track orders through event callbacks.',
-      'Guide agents with typed decisions instead of free text.',
-      'Interview loops reward people who own problems end to end.',
-      'Post-quantum signatures are now practical for TLS.',
-    ]) {
-      expect(gistProblems(g), g).toEqual([]);
-    }
-  });
-
-  it('flags long or empty gists', () => {
-    expect(gistProblems('word '.repeat(40))).toContain('too-long');
-    expect(gistProblems('  ')).toContain('empty');
-  });
-});
+import { codeFromPage, refineInsight, type RawBlock, type RawInsight } from './insight-quality';
 
 const SOURCE = `
 Kubernetes stops routing traffic, sends SIGTERM and waits a grace period of 30 seconds before SIGKILL.
@@ -61,9 +30,9 @@ const raw = (over: Partial<RawInsight> = {}): RawInsight => ({
 });
 
 describe('refineInsight', () => {
-  it('removes repeats and page details, and de-duplicates tags and entities', () => {
+  it('caps key points and de-duplicates tags and entities', () => {
     const r = refineInsight(raw(), SOURCE, normalizeTag);
-    expect(r.keyPoints).toEqual(['Kubernetes stops routing traffic, sends SIGTERM, then SIGKILL after a grace period.']);
+    expect(r.keyPoints).toHaveLength(3);
     expect(r.tags).toEqual(['kubernetes', 'graceful-shutdown', 'signals']);
     expect(r.entities.map((e) => e.name)).toEqual(['Kubernetes', 'Go']);
   });
@@ -136,28 +105,13 @@ describe('refineInsight', () => {
       SOURCE,
       normalizeTag,
     );
-    expect(r.blocks).toEqual([{ type: 'quote', text: 'Find the most complex problem available, and own it completely.', by: 'Sagar' }]);
+    expect(r.blocks.map((b) => b.type)).toEqual(['quote', 'list']);
   });
 
-  it('drops a callout that restates a key point', () => {
-    const r = refineInsight(
-      raw({
-        keyPoints: [{ text: 'Each SDK instance maps to one widget; reopening the widget requires a fresh SDK initialization.', quote: '' }],
-        blocks: [block({ type: 'callout', tone: 'warning', text: 'Each SDK instance maps to one widget. To close and reopen Onramp Instant, you must initialise the SDK again.' })],
-      }),
-      SOURCE,
-      normalizeTag,
-    );
-    expect(r.blocks).toEqual([]);
-  });
-
-  it('checks code against the page', () => {
+  it('accepts code copied from the page, ignoring indentation, and rejects edited code', () => {
     expect(codeFromPage('npm install @acme/sdk', SOURCE)).toBe(true);
+    expect(codeFromPage('  npm install   @acme/sdk\n', SOURCE)).toBe(true);
+    expect(codeFromPage('npm install @acme/sdk --save', SOURCE)).toBe(false);
     expect(codeFromPage('pip install something-else', SOURCE)).toBe(false);
-  });
-
-  it('measures overlap on content words', () => {
-    expect(overlap('the cat sat on the mat', 'a cat sat on a mat')).toBe(1);
-    expect(overlap('kubernetes signals', 'career advice')).toBe(0);
   });
 });

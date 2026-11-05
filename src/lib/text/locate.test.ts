@@ -31,3 +31,25 @@ describe('locateQuote', () => {
     expect(locateQuote('', PAGE)).toBeNull();
   });
 });
+
+describe('locateQuote with opening words', () => {
+  const page = 'Intro. The hit ratio is pretty high (over 99.9%). We load only 1% of the entries.\nSee [the docs](https://example.com/docs/a-b) for details on caching.';
+
+  it('runs from the opening words to the end of the sentence, past decimals', () => {
+    const span = locateQuote('The hit ratio is pretty high', page)!;
+    expect(page.slice(span.start, span.end)).toBe('The hit ratio is pretty high (over 99.9%).');
+  });
+
+  it('matches link text without its URL', () => {
+    const span = locateQuote('See the docs for details on caching', page)!;
+    expect(page.slice(span.start, span.end)).toBe('See [the docs](https://example.com/docs/a-b) for details on caching.');
+  });
+});
+
+describe('locateQuote from mid-sentence', () => {
+  it('widens to the whole sentence', () => {
+    const page = 'Some cities seem to have this figured out better than us. Others do not.';
+    const span = locateQuote('seem to have this figured out better', page)!;
+    expect(page.slice(span.start, span.end)).toBe('Some cities seem to have this figured out better than us.');
+  });
+});

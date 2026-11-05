@@ -1,10 +1,9 @@
-// Deterministic clean-up and verification of model output. Keeps summaries short and
-// non-repetitive, and drops numbers, code and quotes that can't be found in the page,
-// so structured blocks are as trustworthy as plain text. Covered by insight-quality.test.ts.
+// Verification of model output against the page. Only objective checks live here: numbers, code
+// and quotes must appear in the page, and lists are capped. What to say, and not repeating it, is
+// the prompt's job (see insights.ts). Covered by insight-quality.test.ts.
 import type { InsightBlock, PageKind } from '../db/schema';
 import { locateQuote } from '../text/locate';
 
-export const GIST_MAX_WORDS = 25;
 export const MAX_KEY_POINTS = 5;
 export const MAX_BLOCKS = 4;
 export const MAX_ITEMS = 8;
@@ -56,61 +55,6 @@ export interface RefinedInsight {
   entities: EntityDraft[];
 }
 
-// --- Gist rules ---------------------------------------------------------------------------
-
-const PAGE_NOUN = '(?:article|post|page|blog|piece|essay|documentation|docs|guide|tutorial|interview|paper|readme|video|author|writer)s?';
-const REPORTING_VERB = '(?:argues|explains|describes|covers|discusses|shows|profiles|says|outlines|presents|introduces|documents|walks|is|was)';
-
-/** "The article…", "An interview-style post…". */
-const DETERMINER_OPENER = new RegExp(`^(?:a|an|the|this|these)\\s+(?:[\\w'’-]+\\s+){0,3}${PAGE_NOUN}\\b`, 'i');
-/** "Onramp's Android SDK documentation covers…". */
-const NOUN_VERB_OPENER = new RegExp(`^(?:[\\w'’-]+\\s+){0,4}${PAGE_NOUN}\\s+${REPORTING_VERB}\\b`, 'i');
-/** "Harness engineers argue…", "The authors show…". */
-const AUTHOR_OPENER =
-  /^(?:[\w'’-]+\s+){0,3}(?:engineers|team|authors?|researchers|writers?|editors|company)\s+(?:argue|argues|explain|explains|say|says|describe|describes|show|shows|claim|claims|report|reports)\b/i;
-
-/** Page details the summary must not repeat (dates, bylines, freshness). */
-const PAGE_DETAIL =
-  /\b(?:(?:is|was)\s+(?:dated|published|written|posted)|written by|published (?:on|by)|last updated|updated \d|reading time|min(?:ute)?s? read|the page was|the post is dated)\b/i;
-
-export type GistProblem = 'describes-the-page' | 'too-long' | 'empty';
-
-export function wordCount(text: string): number {
-  return text.trim().split(/\s+/).filter(Boolean).length;
-}
-
-export function gistProblems(gist: string): GistProblem[] {
-  const g = gist.trim();
-  const problems: GistProblem[] = [];
-  if (!g) problems.push('empty');
-  if (DETERMINER_OPENER.test(g) || NOUN_VERB_OPENER.test(g) || AUTHOR_OPENER.test(g)) problems.push('describes-the-page');
-  if (wordCount(g) > GIST_MAX_WORDS + 5) problems.push('too-long');
-  return problems;
-}
-
-// --- Repetition ---------------------------------------------------------------------------
-
-const STOP = new Set(
-  'the a an and or of to in on for with by is are was were be as at from that this it its their his her than into about after before can not no so such per you your'.split(' '),
-);
-
-function contentWords(text: string): Set<string> {
-  return new Set(text.toLowerCase().match(/[\p{L}\p{N}%$.]+/gu)?.filter((w) => w.length > 2 && !STOP.has(w)) ?? []);
-}
-
-/** Share of the shorter text's content words that also appear in the other (0–1). */
-export function overlap(a: string, b: string): number {
-  const A = contentWords(a);
-  const B = contentWords(b);
-  if (A.size === 0 || B.size === 0) return 0;
-  let shared = 0;
-  for (const w of A) if (B.has(w)) shared++;
-  return shared / Math.min(A.size, B.size);
-}
-
-const REPEAT = 0.6;
-const repeats = (text: string, earlier: string[]) => earlier.some((e) => overlap(text, e) >= REPEAT);
-
 // --- Verification against the page ---------------------------------------------------------
 
 /** Every number in the page, without thousands separators. */
@@ -128,14 +72,15 @@ function cellVerified(cell: string, hasNumber: (n: number) => boolean): boolean 
   return numbersIn(cell).every(hasNumber);
 }
 
-const CODE_TOKEN = /[A-Za-z_][\w.$:/-]{2,}/g;
+const normalizeLine = (line: string) => line.trim().replace(/\s+/g, ' ');
 
-/** Code must come from the page: most of its identifiers appear in the page text. */
+/** Code must be copied from the page: every non-blank line appears there, ignoring indentation and spacing. */
 export function codeFromPage(code: string, source: string): boolean {
-  const tokens = [...new Set(code.match(CODE_TOKEN) ?? [])];
-  if (tokens.length === 0) return false;
-  const found = tokens.filter((t) => source.includes(t)).length;
-  return found / tokens.length >= 0.7;
+  const lines = code.split('\n').map(normalizeLine).filter(Boolean);
+  if (lines.length === 0) return false;
+  const page = new Set(source.split('\n').map(normalizeLine));
+  const flat = source.replace(/\s+/g, ' ');
+  return lines.every((line) => page.has(line) || flat.includes(line));
 }
 
 const squash = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
@@ -147,7 +92,7 @@ function quoteFromPage(quote: string, source: string): boolean {
 
 // --- Blocks -------------------------------------------------------------------------------
 
-function refineBlock(raw: RawBlock, source: string, used: string[], hasNumber: (n: number) => boolean): InsightBlock | null {
+function refineBlock(raw: RawBlock, source: string, hasNumber: (n: number) => boolean): InsightBlock | null {
   const title = raw.title.trim();
   switch (raw.type) {
     case 'steps': {
@@ -157,7 +102,7 @@ function refineBlock(raw: RawBlock, source: string, used: string[], hasNumber: (
           code: i.code.trim() && codeFromPage(i.code, source) ? i.code.trim() : '',
           lang: i.code.trim() ? i.lang.trim() : '',
         }))
-        .filter((i) => i.text && !PAGE_DETAIL.test(i.text))
+        .filter((i) => i.text)
         .slice(0, MAX_ITEMS);
       return items.length >= 2 ? { type: 'steps', title, items } : null;
     }
@@ -177,13 +122,7 @@ function refineBlock(raw: RawBlock, source: string, used: string[], hasNumber: (
       return series.length >= 2 ? { type: 'chart', title, unit: raw.unit.trim(), series } : null;
     }
     case 'list': {
-      const items: string[] = [];
-      for (const i of raw.items) {
-        const text = i.text.trim();
-        if (!text || PAGE_DETAIL.test(text) || repeats(text, [...used, ...items])) continue;
-        items.push(text);
-        if (items.length === MAX_ITEMS) break;
-      }
+      const items = raw.items.map((i) => i.text.trim()).filter(Boolean).slice(0, MAX_ITEMS);
       return items.length ? { type: 'list', title, items } : null;
     }
     case 'code': {
@@ -196,8 +135,7 @@ function refineBlock(raw: RawBlock, source: string, used: string[], hasNumber: (
     }
     case 'callout': {
       const text = raw.text.trim();
-      // Callouts are short, so a lower bar catches restated key points.
-      if (!text || PAGE_DETAIL.test(text) || used.some((e) => overlap(text, e) >= 0.45)) return null;
+      if (!text) return null;
       return { type: 'callout', tone: raw.tone === 'warning' ? 'warning' : 'info', text };
     }
   }
@@ -209,26 +147,15 @@ const entityKey = (name: string) => name.toLowerCase().replace(/[^\p{L}\p{N}]+/g
 export function refineInsight(raw: RawInsight, source: string, normalizeTag: (t: string) => string): RefinedInsight {
   const gist = raw.gist.trim();
   const found = (quote: string) => (locateQuote(quote, source) ? quote.trim() : '');
-  const keyPoints: string[] = [];
-  const keyPointQuotes: string[] = [];
-  for (const p of raw.keyPoints) {
-    const text = p.text.trim();
-    if (!text || PAGE_DETAIL.test(text) || repeats(text, [gist, ...keyPoints])) continue;
-    keyPoints.push(text);
-    keyPointQuotes.push(found(p.quote));
-    if (keyPoints.length === MAX_KEY_POINTS) break;
-  }
+  const points = raw.keyPoints.filter((p) => p.text.trim()).slice(0, MAX_KEY_POINTS);
+  const keyPoints = points.map((p) => p.text.trim());
+  const keyPointQuotes = points.map((p) => found(p.quote));
 
   const hasNumber = makeNumberCheck(source);
-  const used = [gist, ...keyPoints];
-  const blocks: InsightBlock[] = [];
-  for (const b of raw.blocks) {
-    const block = refineBlock(b, source, used, hasNumber);
-    if (!block) continue;
-    blocks.push(block);
-    if (block.type === 'list') used.push(...block.items);
-    if (blocks.length === MAX_BLOCKS) break;
-  }
+  const blocks = raw.blocks
+    .map((b) => refineBlock(b, source, hasNumber))
+    .filter((b): b is InsightBlock => b !== null)
+    .slice(0, MAX_BLOCKS);
 
   const seen = new Set<string>();
   const entities = raw.entities.filter((e) => {
@@ -246,7 +173,7 @@ export function refineInsight(raw: RawInsight, source: string, normalizeTag: (t:
     gistQuote: found(raw.gistQuote),
     keyPointQuotes,
     blocks,
-    note: note && !PAGE_DETAIL.test(note) ? note : '',
+    note,
     tags: [...new Set(raw.tags.map(normalizeTag).filter(Boolean))].slice(0, MAX_TAGS),
     entities: entities.slice(0, MAX_ENTITIES),
   };

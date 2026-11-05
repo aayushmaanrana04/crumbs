@@ -38,6 +38,12 @@ npm run check    # type-check TypeScript and Svelte
 npm test         # unit tests
 ```
 
+To measure summary quality and cost on real pages, export a backup and run the summary pipeline on it through your local Claude CLI (Haiku):
+
+```bash
+CARREL_EVAL_IN=backup.json CARREL_EVAL_OUT=out.json npx vitest run tools/eval
+```
+
 To load a production build manually: open `chrome://extensions`, enable Developer mode, click **Load unpacked**, and select `.output/chrome-mv3`.
 
 ### Using your local Claude Code while developing

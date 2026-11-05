@@ -3,7 +3,8 @@ import { db, normalizeInsight, PAGE_KINDS, type DocumentType, type Insight } fro
 import { normalizeTag, tagCounts } from '../library/documents';
 import { estimateTokens, splitIntoChunks } from '../text/chunking';
 import { locateQuote } from '../text/locate';
-import { gistProblems, refineInsight, type GistProblem, type RefinedInsight } from './insight-quality';
+import { refineInsight, type RefinedInsight } from './insight-quality';
+import { readableText } from '../text/readable';
 import { toJsonSchema } from './json';
 import { UNTRUSTED_CONTENT_RULE, wrapDocument } from './prompts';
 import { runTask } from './run';
@@ -27,16 +28,20 @@ const BlockSchema = z.strictObject({
   tone: z.enum(['warning', 'info', 'none']).describe('callout'),
 });
 
+// Fields are generated in this order: the gist, then the blocks, then key points that cover only what
+// the blocks don't. Quotes are just the opening words of a page sentence; the code finds the rest.
+const SOURCE = 'The first 6 to 12 words of the page sentence that supports this, copied exactly; "" if none does.';
+
 export const InsightSchema = z.strictObject({
   kind: z.enum(PAGE_KINDS),
-  gist: z.string().describe('One sentence, at most 25 words, stating the main point or what the page lets you do.'),
-  gistQuote: z.string().describe('The sentence from the page that best supports the gist, copied exactly.'),
+  gist: z.string().describe('One sentence, at most 25 words: the main point or what the page lets you do, and why it matters.'),
+  gistQuote: z.string().describe(SOURCE),
+  blocks: z.array(BlockSchema).describe('0 to 4 structured parts the reader would come back to look up, most important first.'),
   keyPoints: z
-    .array(z.strictObject({ text: z.string(), quote: z.string().describe('The sentence from the page that supports this point, copied exactly.') }))
-    .describe('2 to 5 points, each at most 25 words, each adding something new.'),
-  blocks: z.array(BlockSchema).describe('0 to 4 structured blocks, following the recipe for the page kind.'),
+    .array(z.strictObject({ text: z.string(), quote: z.string().describe(SOURCE) }))
+    .describe('2 to 5 points, at most 25 words each, covering what matters that the gist and blocks do not already show.'),
   note: z.string().describe('Empty, or one sentence about something important missing from the saved text.'),
-  tags: z.array(z.string()).describe('1 to 3 broad lowercase topic labels.'),
+  tags: z.array(z.string()).describe('1 to 3 lowercase topic tags of one or two words.'),
   entities: z
     .array(z.strictObject({ name: z.string(), type: z.enum(ENTITY_TYPES) }))
     .describe('At most 8 specific named things the page is substantially about.'),
@@ -44,46 +49,25 @@ export const InsightSchema = z.strictObject({
 
 export type InsightOutput = z.infer<typeof InsightSchema>;
 
-const SYSTEM = `You turn a saved web page into a compact, useful card for the reader's personal library: the gist, the key points, and the structured parts they would actually come back for. Be brief; every word must earn its place.
+const SYSTEM = `You turn a saved web page into a compact card for the reader's personal library: enough to recall the page in seconds and to find again what they would come back for. Every word must earn its place.
 
-1. Decide the page kind, then follow its recipe for blocks:
-- docs (documentation, API or SDK reference): how to implement it. A "steps" block "How to implement" (setup to first working call, code copied from the page), a "table" of the key parameters or options with their meaning, and a "callout" warning for gotchas.
-- tutorial (how-to, walkthrough, or a post explaining how to do something): a "steps" block with the steps in order and their code, plus a "callout" for prerequisites or pitfalls.
-- repo (code repository, README): what it's for in the gist; a "code" block with the install command, a "code" block with the quick-start usage, a "list" of main features.
-- data (post or report built around numbers): a "table" of the data points, and a "chart" when 2 to 10 values measure the same thing in the same unit; a "list" of findings; a "callout" for caveats about the method.
-- research (paper): a "list" with problem, method and limitations; a "table" of results.
-- comparison (review, X vs Y): a "table" of options against criteria, then the verdict as a "callout".
-- release (release notes, changelog, announcement): a "list" of what's new, a "callout" warning for breaking changes, "steps" to upgrade if given.
-- pricing: a "table" of plans with price and what's included.
-- discussion (Q&A, forum, issue thread): the working solution as "steps" or "code", plus a "callout" if answers disagree.
-- news: a "list" of what happened, who, when, and why it matters.
-- opinion (essay, interview, talk): a "list" of the arguments or lessons, and a "quote" of the most memorable line, copied exactly.
-- other: whatever blocks help most, or none.
-
-2. Rules:
-- gist: one sentence of at most 25 words stating the main point or what the page lets you do. Start with the substance; never describe the page or its author ("The article…", "This documentation covers…", "The authors argue…").
-  Bad: "The article argues that backends should handle shutdown signals gracefully."
-  Good: "Handle SIGTERM so in-flight requests finish before Kubernetes' grace period ends and SIGKILL arrives."
-- keyPoints: 2 to 5 points of at most 25 words. Each adds something not in the gist, another point or a block.
-- Quotes (gistQuote, and quote on each key point): the one sentence from the page that best supports it, at most 40 words, copied character for character. Never paraphrase, shorten or join sentences. Leave it "" if no single sentence supports it.
-- Blocks: at most 4. Use only numbers, code and quotes that appear in the page, copied exactly; never invent or compute code or values. A chart's values must all appear in the page. Table rows have one cell per column. Leave unused block fields empty ("" or []), and set tone to "none" unless the block is a callout.
-- note: empty unless content is missing from the saved text (shown only as an image, truncated, collapsed), e.g. "The code example is an image, so it isn't in the saved copy." Never use the note to judge or correct the page.
-- Never mention page details: title, URL, author or byline, publish or update dates, reading time, site navigation.
-- tags: 1 to 3 broad, reusable topic labels such as "kubernetes", "career", "payments". Prefer tags the library already uses.
-- entities: only specific named people, companies, products, technologies or named projects the page is substantially about. At most 8, each name once. No generic concepts.
-- Use only what the page says; add no outside knowledge.
+- kind: what the page is.
+- gist: one sentence of at most 25 words with the page's main point, or what it lets you do, and the outcome or why it matters. Start with the substance, never with the page or its author ("The article…", "This guide covers…"). Name the person, product or company when that is what makes the page memorable.
+- blocks: the parts worth looking up again, most important first, using only what the page shows:
+  steps for a procedure, with its code; table for values compared across items (options, parameters, plans, before/after results, codes); chart for one measure in one unit across 2 to 10 items; code for a command or snippet to copy; list for items that are neither a sequence nor a comparison; quote for the most memorable line, with who said it; callout "warning" for gotchas and must-dos (all in one), callout "info" for the page's own verdict or recommendation.
+  Lead with the page's headline results. Copy numbers, code (including its comments) and quotes exactly; never invent, fix or compute them. Table rows have one cell per column. Leave unused fields empty ("" or []) and tone "none" except on callouts.
+- keyPoints: 2 to 5 points of at most 25 words that add what the gist and blocks do not show. Never restate a block's item.
+- note: empty unless something the reader needs isn't in the saved text, such as code or a chart shown only as an image ([image: …] marks images) or a truncated page. Never use it to judge the page.
+- tags: 1 to 3 broad topic tags of one or two words, e.g. "kubernetes", "payments". Reuse a library tag only if it names this page's main topic.
+- entities: specific named people, companies, products, technologies or projects the page is substantially about, each once.
+- Use only what the page says. Never mention page details: title, URL, byline, dates, reading time, navigation.
 ${UNTRUSTED_CONTENT_RULE}`;
 
-const PROBLEM_FEEDBACK: Record<GistProblem, string> = {
-  'describes-the-page': 'it describes the page instead of stating its point',
-  'too-long': 'it is longer than 25 words',
-  empty: 'it is empty',
-};
-
-// Pages above this size are summarised in parts, then merged.
-const SINGLE_PASS_TOKENS = 12_000;
-const PART_TOKENS = 8_000;
-const MAX_PARTS = 6;
+// Pages above this size are summarised in parts, then merged. Current models read far more, and one
+// pass is both cheaper and better than parts, so only very long pages are split.
+const SINGLE_PASS_TOKENS = 60_000;
+const PART_TOKENS = 40_000;
+const MAX_PARTS = 5;
 const EXISTING_TAGS_LIMIT = 60;
 
 /** The library's most-used tags, so new pages reuse them instead of inventing near-duplicates. */
@@ -100,27 +84,8 @@ function context(type: DocumentType, tags: string[]): string {
 }
 
 async function analyse(prompt: string, source: string, docId: string): Promise<{ draft: RefinedInsight; model: string }> {
-  const request = { system: SYSTEM, schema: toJsonSchema(InsightSchema), effort: 'low' as const };
-  const first = await runTask('insights', { ...request, prompt }, docId);
-  let draft = refineInsight(InsightSchema.parse(first.json), source, normalizeTag);
-  let model = first.model;
-
-  // One repair attempt when the gist breaks a rule; keep the better of the two.
-  const problems = gistProblems(draft.gist);
-  if (problems.length) {
-    const feedback = problems.map((p) => PROBLEM_FEEDBACK[p]).join(' and ');
-    const retry = await runTask(
-      'insights',
-      { ...request, prompt: `${prompt}\n\nYour previous gist was rejected because ${feedback}: ${JSON.stringify(draft.gist)}\nReturn the whole summary again with a corrected gist.` },
-      docId,
-    );
-    const second = refineInsight(InsightSchema.parse(retry.json), source, normalizeTag);
-    if (gistProblems(second.gist).length < problems.length) {
-      draft = second;
-      model = retry.model;
-    }
-  }
-  return { draft, model };
+  const result = await runTask('insights', { system: SYSTEM, schema: toJsonSchema(InsightSchema), effort: 'low', prompt }, docId);
+  return { draft: refineInsight(InsightSchema.parse(result.json), source, normalizeTag), model: result.model };
 }
 
 export async function generateInsights(docId: string): Promise<void> {
@@ -129,11 +94,13 @@ export async function generateInsights(docId: string): Promise<void> {
 
   const prefix = context(doc.type, await existingTags(docId));
   const source = doc.markdown;
+  // The model gets the text a reader sees: link targets and image URLs only cost tokens.
+  const text = readableText(source);
   let result: { draft: RefinedInsight; model: string };
-  if (estimateTokens(source) <= SINGLE_PASS_TOKENS) {
-    result = await analyse(`${prefix}Summarise this page.\n\n${wrapDocument(doc.title, doc.url, source)}`, source, docId);
+  if (estimateTokens(text) <= SINGLE_PASS_TOKENS) {
+    result = await analyse(`${prefix}Summarise this page.\n\n${wrapDocument(doc.title, doc.url, text)}`, source, docId);
   } else {
-    const parts = splitIntoChunks(source, PART_TOKENS).slice(0, MAX_PARTS);
+    const parts = splitIntoChunks(text, PART_TOKENS).slice(0, MAX_PARTS);
     const partials: RefinedInsight[] = [];
     for (const [i, part] of parts.entries()) {
       const { draft } = await analyse(
