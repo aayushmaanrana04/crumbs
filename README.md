@@ -1,6 +1,6 @@
-# Carrel
+# Crumbs
 
-<img src="public/icon/128.png" width="64" alt="Carrel">
+<img src="public/icon/128.png" width="64" alt="Crumbs">
 
 A local-first personal knowledge OS, built as a Chrome extension. It captures what you read, organises it with AI, and makes it searchable and askable. Everything is stored in your browser.
 
@@ -13,12 +13,12 @@ Phases 0–4 are done:
 - **Save pages** from the side panel, `⌘/Ctrl+Shift+S`, or right-click. Selected text is saved as a highlight. Duplicates are detected.
 - **Auto-capture** on sites you opt into, after you've actually read the page. Sensitive sites can't be auto-captured; blocked sites are never saved.
 - **Library** with filters, keyword search, a reading view, tags and notes. Export as JSON or a Markdown zip, and import backups.
-- **AI understanding** in the background: summary, key takeaways, facts, topics, entities and auto-tags for each page. Retries, a daily limit and an activity log of every AI call.
+- **Summaries** in the background: a gist, key points and structured blocks (steps, tables, code), each cited to the passage it comes from, plus auto-tags. Retries, a daily limit and an activity log of every AI call.
 - **Search** by keyword and, with an embedding model, by meaning, showing the matching passage.
 - **Ask** questions across your library, with citations to the exact passage, and the AI's own inferences marked separately.
 - **Providers**: sign in with OpenRouter (usage is paid from your OpenRouter credit), or use your own key for OpenAI, Anthropic, Google Gemini, OpenRouter and Ollama, plus Chrome built-in AI. Each task (understanding, Ask, search) can use a different model.
 
-- **Side panel** opened from the toolbar: whether you've saved the page, what you've read that relates to it, quick save, notes and Ask. Optional follow mode keeps it in step with your tabs.
+- **Side panel** opened from the toolbar or the save toast: the page's full summary once saved, related pages from your library, quick save, notes and Ask. Optional follow mode keeps it in step with your tabs.
 - **Projects** group pages around a goal, with notes, open questions and suggested pages. Ask can be scoped to a project.
 
 - **Design:** the "Soft neutral" design system, with light and dark modes following the system. See [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) and `design/summaryse.pen`.
@@ -41,7 +41,7 @@ npm test         # unit tests
 To measure summary quality and cost on real pages, export a backup and run the summary pipeline on it through your local Claude CLI (Haiku):
 
 ```bash
-CARREL_EVAL_IN=backup.json CARREL_EVAL_OUT=out.json npx vitest run tools/eval
+CRUMBS_EVAL_IN=backup.json CRUMBS_EVAL_OUT=out.json npx vitest run tools/eval
 ```
 
 To load a production build manually: open `chrome://extensions`, enable Developer mode, click **Load unpacked**, and select `.output/chrome-mv3`.
@@ -75,6 +75,8 @@ src/
 ```
 
 ## Privacy
+
+The full policy is in [PRIVACY.md](PRIVACY.md).
 
 - Knowledge is stored locally in IndexedDB. There's no account and no server.
 - API keys live in `chrome.storage.local` on this device and are only sent to the provider they belong to.

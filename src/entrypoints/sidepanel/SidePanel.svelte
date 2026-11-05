@@ -203,7 +203,7 @@
   <main class="body">
     {#if offerFollow}
       <Banner title="Follow my browsing?" ondismiss={dismissFollowPrompt}>
-        Keep this panel in step with the tab you're on. Chrome will ask to let Carrel see tab addresses and titles; they're matched on this device and not saved.
+        Keep this panel in step with the tab you're on. Chrome will ask to let Crumbs see tab addresses and titles; they're matched on this device and not saved.
         <span class="banner-actions">
           <Button size="sm" kind="primary" onclick={() => setFollow(true)}>Turn on</Button>
           <Button size="sm" kind="ghost" onclick={dismissFollowPrompt}>Not now</Button>
@@ -216,7 +216,7 @@
     {:else if view.state === 'unreadable'}
       <EmptyState title="Nothing to show for this tab">
         {#if view.url && isCapturableUrl(view.url)}
-          Carrel needs access to read this page.
+          Crumbs needs access to read this page.
           <div class="center"><Button kind="primary" size="sm" onclick={() => allowSite(view.state === 'unreadable' ? view.url! : '')}>Allow on this site</Button></div>
           Or click the toolbar button while you're on the page.
         {:else}
@@ -326,6 +326,8 @@
   .body {
     flex: 1;
     display: grid;
+    /* minmax(0) so wide summary blocks (tables, code) scroll inside the column instead of widening it. */
+    grid-template-columns: minmax(0, 1fr);
     align-content: start;
     gap: 20px;
     padding: 16px;

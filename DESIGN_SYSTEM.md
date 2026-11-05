@@ -1,6 +1,6 @@
-# Carrel design system: Soft neutral
+# Crumbs design system: Soft neutral
 
-Source of truth: `design/summaryse.pen` (open in Pen). Left: **Components · Soft neutral**, 55 components with their states and a dark-mode check. Right: **Screens · Soft neutral**, principles and example screens. **Phase 4 · Side panel & projects** has the side panel states and the project screens. **Brand · Carrel logo exploration** has the logo rounds and the chosen mark.
+Source of truth: `design/summaryse.pen` (open in Pen). Left: **Components · Soft neutral**, 55 components with their states and a dark-mode check. Right: **Screens · Soft neutral**, principles and example screens. **Phase 4 · Side panel & projects** has the side panel states and the project screens. **Brand · Crumbs logo exploration** has the logo rounds and the chosen mark.
 
 Code: tokens in `src/assets/tokens.css`, components in `src/ui/kit/` (one Svelte file per Pen component).
 
@@ -34,7 +34,7 @@ Light and dark follow the system setting (`prefers-color-scheme`).
 
 **Type:** Geist (bundled with the extension, OFL). 11 / 12 / 13 / 14 / 16px. Headings 20–30px, weight 600, tight letter-spacing (−0.4 to −0.8px). Reading text 16px at 1.7 line height, 68 characters wide.
 
-**Brand:** the mark is a bookmark with a c cut out of it (B1 on the brand board). The wordmark is `carrel` in Geist 600, lowercase. Extension icons live in `public/icon/` (16, 32, 48, 128px; the c is filled white so it reads on light and dark toolbars). In the UI, use `Logo` for the brand and Lucide for everything else.
+**Brand:** the mark is a bookmark with a c cut out of it (B1 on the brand board). The wordmark is `crumbs` in Geist 600, lowercase. Extension icons live in `public/icon/` (16, 32, 48, 128px; the c is filled white so it reads on light and dark toolbars). In the UI, use `Logo` for the brand and Lucide for everything else.
 
 **Motion:** 120ms, `cubic-bezier(0.2, 0, 0, 1)`, no bounce. Reduced motion is respected.
 
@@ -42,7 +42,7 @@ Light and dark follow the system setting (`prefers-color-scheme`).
 
 | Group | Components |
 |---|---|
-| Brand | `Logo` (the bookmark mark, optional `carrel` wordmark; uses the text colour) |
+| Brand | `Logo` (the bookmark mark, optional `crumbs` wordmark; uses the text colour) |
 | Actions | `Button` (primary, secondary, ghost, danger; md, sm) · `IconButton` (plain, filled, primary) · `Kbd` · `Spinner` · `Menu` |
 | Inputs | `Field` (label, hint, error) · `Input` · `TextArea` · `SearchField` (with shortcut) · `Select` · `Segmented` · `Toggle` · `Checkbox` |
 | Navigation and lists | `NavItem` · `GroupLabel` · `ListRow` (status is a word; only errors are red) |

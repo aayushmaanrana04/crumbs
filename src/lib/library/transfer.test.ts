@@ -30,7 +30,15 @@ describe('export and import', () => {
     expect(await importJson(file)).toEqual({ added: 0, skipped: 1 });
   });
 
-  it('rejects files that are not Carrel backups', async () => {
+  it.each(['carrel', 'summaryse'])('imports backups made under the old name %s', async (app) => {
+    await saveExtractedPage({ url: 'https://a.dev/old', title: 'Old', excerpt: '', markdown, type: 'article', selection: '' }, 'manual');
+    const backup = JSON.parse(await (await exportJson()).text());
+    expect(backup.app).toBe('crumbs');
+    await Promise.all(db.tables.map((t) => t.clear()));
+    expect(await importJson(new File([JSON.stringify({ ...backup, app })], 'old.json'))).toEqual({ added: 1, skipped: 0 });
+  });
+
+  it('rejects files that are not Crumbs backups', async () => {
     await expect(importJson(new File(['{"hello":1}'], 'x.json'))).rejects.toThrow();
   });
 });

@@ -64,7 +64,7 @@ chmodSync(wrapperPath, 0o755);
 
 const manifest = {
   name: HOST_NAME,
-  description: 'Carrel dev bridge to the local Claude Code CLI',
+  description: 'Crumbs dev bridge to the local Claude Code CLI',
   path: wrapperPath,
   type: 'stdio',
   allowed_origins: [`chrome-extension://${EXTENSION_ID}/`],

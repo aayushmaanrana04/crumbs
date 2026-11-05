@@ -12,6 +12,9 @@ describe('ai labels', () => {
     expect(modelLabel('claude-haiku-5-5')).toBe('Haiku 5.5');
     expect(modelLabel('claude-opus-5')).toBe('Opus 5');
     expect(modelLabel('gpt-x-mini')).toBe('gpt-x-mini');
+    expect(modelLabel('anthropic/claude-haiku-5.5')).toBe('Haiku 5.5');
+    expect(modelLabel('deepseek/deepseek-v4.1-flash')).toBe('deepseek-v4.1-flash');
+    expect(modelLabel('models/gemini-x')).toBe('gemini-x');
     expect(modelLabel(undefined)).toBeUndefined();
   });
 });

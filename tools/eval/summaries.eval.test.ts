@@ -1,7 +1,7 @@
 // Summary eval: runs the real summary pipeline (prompt, schema, checks) on a library export, through
 // Haiku via the local Claude CLI, and records each summary with the size of what was sent and returned.
-// Skipped unless CARREL_EVAL_IN is set:
-//   CARREL_EVAL_IN=library.json CARREL_EVAL_OUT=out.json npx vitest run tools/eval
+// Skipped unless CRUMBS_EVAL_IN is set:
+//   CRUMBS_EVAL_IN=library.json CRUMBS_EVAL_OUT=out.json npx vitest run tools/eval
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { describe, it, vi } from 'vitest';
@@ -52,18 +52,18 @@ vi.mock('../../src/lib/ai/run', () => ({
   },
 }));
 
-const input = process.env.CARREL_EVAL_IN;
+const input = process.env.CRUMBS_EVAL_IN;
 
 describe.skipIf(!input)('summary eval', () => {
   it('summarises every page', { timeout: 30 * 60_000 }, async () => {
     const { db } = await import('../../src/lib/db/schema');
     const { generateInsights } = await import('../../src/lib/ai/insights');
-    // A Carrel backup ("documents") or a raw dump ("docs").
+    // A Crumbs backup ("documents") or a raw dump ("docs").
     const file = JSON.parse(readFileSync(input!, 'utf8')) as { docs?: { id: string; title: string }[]; documents?: { id: string; title: string }[] };
     const library = { docs: file.documents ?? file.docs ?? [] };
     await db.documents.bulkPut(library.docs as never);
 
-    const only = process.env.CARREL_EVAL_ONLY;
+    const only = process.env.CRUMBS_EVAL_ONLY;
     const ids = library.docs.filter((d) => !only || d.title.includes(only)).map((d) => d.id);
     let next = 0;
     // A few at a time, like the extension's queue.
@@ -78,6 +78,6 @@ describe.skipIf(!input)('summary eval', () => {
 
     const results = ids.map((id) => ({ docId: id, insight: null as unknown, calls: calls.filter((c) => c.docId === id) }));
     for (const r of results) r.insight = await db.insights.get(r.docId);
-    writeFileSync(process.env.CARREL_EVAL_OUT ?? 'eval-out.json', JSON.stringify(results, null, 1));
+    writeFileSync(process.env.CRUMBS_EVAL_OUT ?? 'eval-out.json', JSON.stringify(results, null, 1));
   });
 });

@@ -7,7 +7,7 @@
   import Input from '@/ui/kit/Input.svelte';
   import Spinner from '@/ui/kit/Spinner.svelte';
 
-  // Sign in with OpenRouter instead of pasting a key. If the sign-in window can't hand back to Carrel,
+  // Sign in with OpenRouter instead of pasting a key. If the sign-in window can't hand back to Crumbs,
   // OpenRouter can show a one-time code to paste here instead.
   let { onkey, onmanual }: { onkey: (key: string) => Promise<void>; onmanual: () => void } = $props();
 
@@ -94,7 +94,7 @@
     <button type="button" class="link" onclick={onmanual}>Paste a key instead</button>
   </div>
   <p class="hint">
-    Opens OpenRouter so you can sign in and approve Carrel. Usage is paid from your OpenRouter credit; Carrel never sees your
+    Opens OpenRouter so you can sign in and approve Crumbs. Usage is paid from your OpenRouter credit; Crumbs never sees your
     password.
   </p>
   {#if offerCode}

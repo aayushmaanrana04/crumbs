@@ -18,13 +18,13 @@
     {#if pages.value === 0}
       <!-- First run: install opens this page. -->
       <p class="intro">
-        Carrel saves the pages you choose into this browser, and uses an AI provider you connect to summarise them and answer
+        Crumbs saves the pages you choose into this browser, and uses an AI provider you connect to summarise them and answer
         your questions. Connect one below to start.
       </p>
     {/if}
     <SettingsGroup
       title="AI providers"
-      description="Pages you save or ask about are sent to the provider you choose, to summarise and answer. Keys stay in this browser; there is no Carrel server."
+      description="Pages you save or ask about are sent to the provider you choose, to summarise and answer. Keys stay in this browser; there is no Crumbs server."
     >
       {#each PROVIDER_KINDS as kind (kind)}<ProviderRow {kind} />{/each}
     </SettingsGroup>

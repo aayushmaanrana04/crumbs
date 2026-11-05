@@ -18,7 +18,7 @@ describe('OpenRouter sign-in', () => {
       code_challenge: 'c',
       code_challenge_method: 'S256',
       state: 's',
-      key_label: 'Carrel',
+      key_label: 'Crumbs',
     });
     expect(new URL(authorizeUrl({ challenge: 'c' })).searchParams.has('callback_url')).toBe(false);
   });

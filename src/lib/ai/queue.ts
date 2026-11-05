@@ -104,6 +104,6 @@ export async function updateBadge(): Promise<void> {
   await browser.action.setBadgeBackgroundColor({ color: '#1A1A19' });
   await browser.action.setBadgeText({ text: pending > 0 ? String(Math.min(pending, 999)) : '' });
   await browser.action.setTitle({
-    title: pending > 0 ? `Open Carrel · ${pending} page${pending === 1 ? '' : 's'} waiting to be summarised` : 'Open Carrel',
+    title: pending > 0 ? `Open Crumbs · ${pending} page${pending === 1 ? '' : 's'} waiting to be summarised` : 'Open Crumbs',
   });
 }

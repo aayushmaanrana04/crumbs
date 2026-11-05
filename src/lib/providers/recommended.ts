@@ -26,6 +26,13 @@ export const RECOMMENDED_MODELS: Partial<Record<ProviderKind, Partial<Record<Tas
       { id: 'google/gemini-embedding-2', note: 'more accurate' },
     ],
   },
+  anthropic: {
+    insights: [{ id: 'claude-haiku-5-5', note: 'fast and inexpensive' }],
+    answer: [
+      { id: 'claude-sonnet-5-5', note: 'best answers' },
+      { id: 'claude-haiku-5-5', note: 'faster and cheaper' },
+    ],
+  },
 };
 
 export function recommendedFor(kind: ProviderKind, task: TaskName): Recommendation[] {

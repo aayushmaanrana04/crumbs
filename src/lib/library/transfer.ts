@@ -16,7 +16,7 @@ export async function exportJson(): Promise<Blob> {
     db.insights.toArray(),
     db.projects.toArray(),
   ]);
-  const payload = { app: 'carrel', version: EXPORT_VERSION, exportedAt: new Date().toISOString(), documents, highlights, insights, projects };
+  const payload = { app: 'crumbs', version: EXPORT_VERSION, exportedAt: new Date().toISOString(), documents, highlights, insights, projects };
   return new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 }
 
@@ -72,14 +72,14 @@ export async function exportMarkdownZip(): Promise<Blob> {
       '## Content\n',
       doc.markdown,
     ];
-    files[`carrel/${name}.md`] = strToU8(parts.filter(Boolean).join('\n'));
+    files[`crumbs/${name}.md`] = strToU8(parts.filter(Boolean).join('\n'));
   }
   return new Blob([zipSync(files) as BlobPart], { type: 'application/zip' });
 }
 
 const ImportSchema = z.object({
   // Backups made before the rename say 'summaryse'.
-  app: z.enum(['carrel', 'summaryse']),
+  app: z.enum(['crumbs', 'carrel', 'summaryse']),
   version: z.number().int().max(EXPORT_VERSION),
   documents: z.array(z.looseObject({ id: z.string(), canonicalUrl: z.string(), markdown: z.string() })),
   highlights: z.array(z.looseObject({ id: z.string(), docId: z.string() })).default([]),

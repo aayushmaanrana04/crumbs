@@ -58,6 +58,7 @@
 <style>
   .summary {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
   }
   .skeleton {
     display: grid;

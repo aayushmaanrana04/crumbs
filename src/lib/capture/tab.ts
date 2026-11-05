@@ -41,7 +41,7 @@ declare const chrome: typeof browser;
  * Self-contained because it's serialised into the tab.
  */
 function renderToast(text: string, isError: boolean, action: string | null) {
-  const id = 'carrel-toast-host';
+  const id = 'crumbs-toast-host';
   document.getElementById(id)?.remove();
   const host = document.createElement('div');
   host.id = id;

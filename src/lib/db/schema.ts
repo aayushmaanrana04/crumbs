@@ -24,7 +24,7 @@ export interface KnowledgeDocument {
   excerpt: string;
   /** How it was saved: a click/shortcut/menu, or auto-capture. */
   source: 'manual' | 'auto';
-  /** When the full page was last opened in Carrel; unset means unread. */
+  /** When the full page was last opened in Crumbs; unset means unread. */
   readAt?: number;
   userNotes: string;
   tags: string[];

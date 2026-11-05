@@ -43,7 +43,7 @@
 <section>
   <p class="gist">{insight.gist}&nbsp;{@render citeFor('gist')}</p>
   {#if cites.isOpen('gist')}<div class="gist-passage">{@render passage('gist', cites.span('gist'))}</div>{/if}
-  {#if insight.note}<p class="note"><Info size={13} /> {insight.note}</p>{/if}
+  {#if insight.note}<p class="note"><span class="note-icon"><Info size={13} /></span> {insight.note}</p>{/if}
 </section>
 
 {#if insight.keyPoints.length}
@@ -94,11 +94,16 @@
   }
   .note {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 6px;
     margin: 10px 0 0;
     font-size: var(--text-sm);
     color: var(--text-3);
+  }
+  .note-icon {
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 2px;
   }
   .points {
     display: grid;

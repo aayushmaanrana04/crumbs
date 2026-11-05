@@ -18,7 +18,9 @@ export function rowStatus(status: AiStatus): { label: string; tone: 'normal' | '
 /** Friendly model name, e.g. "claude-haiku-5-5" → "Haiku 5.5". Unknown ids pass through. */
 export function modelLabel(model: string | undefined): string | undefined {
   if (!model) return undefined;
-  const claude = model.match(/^claude-([a-z]+)-(\d+)(?:-(\d+))?$/);
+  // Drop a vendor prefix: OpenRouter's "anthropic/…", Gemini's "models/…".
+  const id = model.replace(/^[\w.-]+\//, '');
+  const claude = id.match(/^claude-([a-z]+)-(\d+)(?:[.-](\d+))?$/);
   if (claude) return `${claude[1]![0]!.toUpperCase()}${claude[1]!.slice(1)} ${claude[2]}${claude[3] ? `.${claude[3]}` : ''}`;
-  return model.replace(/^models\//, '');
+  return id;
 }

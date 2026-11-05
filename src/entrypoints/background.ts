@@ -54,7 +54,7 @@ async function updateTabBadge(tabId: number) {
   await browser.action.setBadgeText({ tabId, text: count ? String(count) : '' });
   await browser.action.setTitle({
     tabId,
-    title: count ? `Open Carrel · ${count} related page${count === 1 ? '' : 's'} in your library` : 'Open Carrel',
+    title: count ? `Open Crumbs · ${count} related page${count === 1 ? '' : 's'} in your library` : 'Open Crumbs',
   });
 }
 
@@ -70,8 +70,8 @@ export default defineBackground(() => {
 
   browser.runtime.onInstalled.addListener(async ({ reason }) => {
     await browser.contextMenus.removeAll();
-    browser.contextMenus.create({ id: 'save-page', title: 'Save page to Carrel', contexts: ['page'] });
-    browser.contextMenus.create({ id: 'save-selection', title: 'Save highlight to Carrel', contexts: ['selection'] });
+    browser.contextMenus.create({ id: 'save-page', title: 'Save page to Crumbs', contexts: ['page'] });
+    browser.contextMenus.create({ id: 'save-selection', title: 'Save highlight to Crumbs', contexts: ['selection'] });
     if (reason === 'install') {
       await browser.tabs.create({ url: browser.runtime.getURL('/app.html#/settings') });
     }
@@ -137,7 +137,7 @@ export default defineBackground(() => {
     async 'capture.auto'(_args, sender) {
       if (sender.tab?.id === undefined) return null;
       const outcome = await captureTab(sender.tab.id, 'auto');
-      if (outcome.status === 'saved') await showToast(sender.tab.id, 'Saved automatically to Carrel', { action: 'View' });
+      if (outcome.status === 'saved') await showToast(sender.tab.id, 'Saved automatically to Crumbs', { action: 'View' });
       void drainQueue();
       return outcome;
     },

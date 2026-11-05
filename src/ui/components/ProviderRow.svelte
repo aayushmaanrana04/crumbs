@@ -151,7 +151,7 @@
       {#if status.state === 'error'}<span class="error-text small">{status.message}</span>{/if}
     </div>
     {#if config.connectedAt}
-      <p class="faint small">Disconnect removes the key from Carrel. It stays active on OpenRouter until you delete it under Keys.</p>
+      <p class="faint small">Disconnect removes the key from Crumbs. It stays active on OpenRouter until you delete it under Keys.</p>
     {/if}
     {#if status.state === 'ok' && info.supportsCompletion}
       <TryPrompt {kind} models={status.models} />

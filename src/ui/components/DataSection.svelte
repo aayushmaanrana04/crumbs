@@ -41,7 +41,7 @@
 <SettingsGroup title="Your data" description="Everything is stored in this browser. Export regularly if you want a backup.">
   <SettingsRow title="Backup" detail="Everything, including summaries and highlights, as one JSON file.">
     {#snippet control()}
-      <Button size="sm" onclick={async () => download(await exportJson(), `carrel-${stamp()}.json`)}>Export</Button>
+      <Button size="sm" onclick={async () => download(await exportJson(), `crumbs-${stamp()}.json`)}>Export</Button>
       <label class="import">
         Import
         <input type="file" accept="application/json,.json" onchange={onImport} hidden />
@@ -50,7 +50,7 @@
   </SettingsRow>
   <SettingsRow title="Markdown" detail="One file per page, for Obsidian or any notes app.">
     {#snippet control()}
-      <Button size="sm" onclick={async () => download(await exportMarkdownZip(), `carrel-${stamp()}.zip`)}>Export</Button>
+      <Button size="sm" onclick={async () => download(await exportMarkdownZip(), `crumbs-${stamp()}.zip`)}>Export</Button>
     {/snippet}
   </SettingsRow>
   <SettingsRow title="Delete everything" detail="Remove every page, summary, highlight, note and project from this browser.">

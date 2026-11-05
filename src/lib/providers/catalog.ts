@@ -24,7 +24,7 @@ export const PROVIDER_INFO: Record<ProviderKind, ProviderInfo> = {
     hostPermissions: PROVIDER_HOSTS.anthropic,
     supportsCompletion: true,
     supportsEmbeddings: false,
-    defaultModel: 'claude-opus-5-5',
+    defaultModel: 'claude-haiku-5-5',
   },
   gemini: {
     kind: 'gemini',

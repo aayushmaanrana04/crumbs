@@ -38,6 +38,7 @@
           <Input
             type="number"
             min="0"
+            aria-label="Daily limit for background work"
             value={String(limits.value!.dailyBackgroundCalls)}
             onchange={(e) => usageLimits.setValue({ dailyBackgroundCalls: Math.max(0, Number(e.currentTarget.value) || 0) })}
           />

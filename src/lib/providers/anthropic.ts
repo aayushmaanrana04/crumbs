@@ -42,7 +42,7 @@ export const anthropic: ProviderAdapter = {
   },
 
   async complete(config, request) {
-    const model = request.model || 'claude-opus-5-5';
+    const model = request.model || anthropic.info.defaultModel;
     const started = Date.now();
     let response;
     try {

@@ -1,4 +1,4 @@
-// "Connect OpenRouter": OAuth with PKCE, so the user signs in on OpenRouter and Carrel gets a key
+// "Connect OpenRouter": OAuth with PKCE, so the user signs in on OpenRouter and Crumbs gets a key
 // that bills their OpenRouter credit. No client secret and no server: the code is exchanged here.
 // https://openrouter.ai/docs/guides/overview/auth/oauth
 
@@ -34,7 +34,7 @@ export function authorizeUrl(options: { challenge: string; callback?: string; st
   url.searchParams.set('code_challenge', options.challenge);
   url.searchParams.set('code_challenge_method', 'S256');
   if (options.state) url.searchParams.set('state', options.state);
-  url.searchParams.set('key_label', 'Carrel');
+  url.searchParams.set('key_label', 'Crumbs');
   return url.toString();
 }
 

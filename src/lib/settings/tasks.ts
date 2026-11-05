@@ -16,7 +16,7 @@ export const TASKS: { name: TaskName; label: string; description: string; needs:
     name: 'insights',
     label: 'Understanding pages',
     description:
-      'Summaries, key points, topics and entities for every saved page, including auto-captured ones, and again when Carrel updates its summary format. Runs in the background, so a fast, inexpensive model works well.',
+      'Summaries, key points, topics and entities for every saved page, including auto-captured ones, and again when Crumbs updates its summary format. Runs in the background, so a fast, inexpensive model works well.',
     needs: 'completion',
   },
   {

@@ -8790,14 +8790,10 @@
                               "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "text",
-                                  "id": "YjSpt",
-                                  "name": "Initial",
-                                  "fill": "$text-2",
-                                  "content": "A",
-                                  "fontFamily": "$font",
-                                  "fontSize": 13,
-                                  "fontWeight": "600"
+                                  "id": "X7vbm",
+                                  "type": "ref",
+                                  "ref": "xvR2r",
+                                  "name": "Icon"
                                 }
                               ]
                             },
@@ -8891,8 +8887,15 @@
                           "ref": "RdxQt",
                           "name": "ProviderCard · OpenRouter · not connected",
                           "descendants": {
-                            "YjSpt": {
-                              "content": "O"
+                            "o0wbfz": {
+                              "children": [
+                                {
+                                  "id": "FjBLP",
+                                  "type": "ref",
+                                  "ref": "iuqkp",
+                                  "name": "Icon"
+                                }
+                              ]
                             },
                             "rd7qs": {
                               "content": "OpenRouter"
@@ -8939,7 +8942,7 @@
                                       "name": "Paste instead",
                                       "descendants": {
                                         "Hj68G": {
-                                          "content": "Paste a key or code instead",
+                                          "content": "Paste a key instead",
                                           "fontWeight": "normal",
                                           "fill": "$text-2"
                                         }
@@ -8970,8 +8973,15 @@
                           "ref": "RdxQt",
                           "name": "ProviderCard · OpenRouter · connected",
                           "descendants": {
-                            "YjSpt": {
-                              "content": "O"
+                            "o0wbfz": {
+                              "children": [
+                                {
+                                  "id": "P42nV",
+                                  "type": "ref",
+                                  "ref": "iuqkp",
+                                  "name": "Icon"
+                                }
+                              ]
                             },
                             "rd7qs": {
                               "content": "OpenRouter"
@@ -9032,8 +9042,15 @@
                           "ref": "RdxQt",
                           "name": "ProviderCard · OpenRouter · paste a code",
                           "descendants": {
-                            "YjSpt": {
-                              "content": "O"
+                            "o0wbfz": {
+                              "children": [
+                                {
+                                  "id": "YVF6E",
+                                  "type": "ref",
+                                  "ref": "iuqkp",
+                                  "name": "Icon"
+                                }
+                              ]
                             },
                             "rd7qs": {
                               "content": "OpenRouter"
@@ -9057,6 +9074,240 @@
                               "content": "Use code"
                             }
                           }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "W59TM",
+                      "name": "Provider icons",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SYX2V",
+                          "name": "Label",
+                          "fill": "$text-3",
+                          "content": "Provider icons · Simple Icons, drawn in the text colour on a soft tile",
+                          "fontFamily": "$font",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "rj6jI",
+                          "name": "Icons",
+                          "gap": 12,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "L45WI",
+                              "name": "Tile OpenAI",
+                              "width": 32,
+                              "height": 32,
+                              "fill": "$surface",
+                              "cornerRadius": "$r-sm",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "suwC2",
+                                  "name": "Provider icon / OpenAI",
+                                  "reusable": true,
+                                  "width": 16,
+                                  "height": 16,
+                                  "layout": "none",
+                                  "children": [
+                                    {
+                                      "type": "path",
+                                      "id": "X96bqt",
+                                      "x": 0,
+                                      "y": 0,
+                                      "name": "Logo",
+                                      "geometry": "M22.2819 9.8211a5.9847 5.9847 0 0 0-0.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9 6.0651 6.0651 0 0 0-10.2757 2.1715 5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 0.7427 7.0966 5.98 5.98 0 0 0 0.511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001 5.9847 5.9847 0 0 0 4.5086 2.0108 6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-0.7475-7.0729z m-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l0.1419-0.0804 4.7783-2.7582a0.7948 0.7948 0 0 0 0.3927-0.6813v-6.7369l2.02 1.1686a0.071 0.071 0 0 1 0.038 0.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944z m-9.6607-4.1254a4.4708 4.4708 0 0 1-0.5346-3.0137l0.142 0.0852 4.783 2.7582a0.7712 0.7712 0 0 0 0.7806 0l5.8428-3.3685v2.3324a0.0804 0.0804 0 0 1-0.0332 0.0615l-4.8398 2.7913a4.4992 4.4992 0 0 1-6.1408-1.6464z m-1.2584-10.4082a4.485 4.485 0 0 1 2.3655-1.9728v5.6772a0.7664 0.7664 0 0 0 0.3879 0.6765l5.8144 3.3543-2.0201 1.1685a0.0757 0.0757 0 0 1-0.071 0l-4.8303-2.7865a4.504 4.504 0 0 1-1.6464-6.1408z m16.5963 3.8558l-5.8333-3.3874 2.0154-1.164a0.0757 0.0757 0 0 1 0.071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-0.6765 8.1042v-5.6772a0.79 0.79 0 0 0-0.407-0.667z m2.0107-3.0231l-0.142-0.0852-4.7735-2.7818a0.7759 0.7759 0 0 0-0.7854 0l-5.8379 3.3684v-2.3323a0.0662 0.0662 0 0 1 0.0284-0.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66z m-12.6413 4.1347l-2.02-1.1638a0.0804 0.0804 0 0 1-0.038-0.0567v-5.5683a4.4992 4.4992 0 0 1 7.3757-3.4537l-0.142 0.0805-4.7782 2.758a0.7948 0.7948 0 0 0-0.3927 0.6813z m1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997z",
+                                      "viewBox": [
+                                        0,
+                                        0,
+                                        24,
+                                        24
+                                      ],
+                                      "fill": "$text",
+                                      "width": 16,
+                                      "height": 16
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "nXzMq",
+                              "name": "Tile Anthropic",
+                              "width": 32,
+                              "height": 32,
+                              "fill": "$surface",
+                              "cornerRadius": "$r-sm",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "xvR2r",
+                                  "name": "Provider icon / Anthropic",
+                                  "reusable": true,
+                                  "width": 16,
+                                  "height": 16,
+                                  "layout": "none",
+                                  "children": [
+                                    {
+                                      "type": "path",
+                                      "id": "Dx0wg",
+                                      "x": 0,
+                                      "y": 0,
+                                      "name": "Logo",
+                                      "geometry": "M17.3041 3.541h-3.6718l6.696 16.918h3.6717z m-10.6082 0l-6.6959 16.918h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442l-6.6959-16.9182z m-0.3712 10.2232l2.2914-5.9456 2.2914 5.9456z",
+                                      "viewBox": [
+                                        0,
+                                        0,
+                                        24,
+                                        24
+                                      ],
+                                      "fill": "$text",
+                                      "width": 16,
+                                      "height": 16
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "pEzlz",
+                              "name": "Tile Google Gemini",
+                              "width": 32,
+                              "height": 32,
+                              "fill": "$surface",
+                              "cornerRadius": "$r-sm",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "cs7pe",
+                                  "name": "Provider icon / Google Gemini",
+                                  "reusable": true,
+                                  "width": 16,
+                                  "height": 16,
+                                  "layout": "none",
+                                  "children": [
+                                    {
+                                      "type": "path",
+                                      "id": "XjzOl",
+                                      "x": 0,
+                                      "y": 0,
+                                      "name": "Logo",
+                                      "geometry": "M11.04 19.32q0.96 2.19 0.96 4.68 0-2.49 0.93-4.68 0.96-2.19 2.58-3.81t3.81-2.55q2.19-0.96 4.68-0.96-2.49 0-4.68-0.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81q-0.93-2.19-0.93-4.68 0 2.49-0.96 4.68-0.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58q-2.19 0.93-4.68 0.93 2.49 0 4.68 0.96 2.19 0.93 3.81 2.55t2.55 3.81",
+                                      "viewBox": [
+                                        0,
+                                        0,
+                                        24,
+                                        24
+                                      ],
+                                      "fill": "$text",
+                                      "width": 16,
+                                      "height": 16
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "i5pm8",
+                              "name": "Tile OpenRouter",
+                              "width": 32,
+                              "height": 32,
+                              "fill": "$surface",
+                              "cornerRadius": "$r-sm",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "iuqkp",
+                                  "name": "Provider icon / OpenRouter",
+                                  "reusable": true,
+                                  "width": 16,
+                                  "height": 16,
+                                  "layout": "none",
+                                  "children": [
+                                    {
+                                      "type": "path",
+                                      "id": "TS349",
+                                      "x": 0,
+                                      "y": 0,
+                                      "name": "Logo",
+                                      "geometry": "M16.778 1.844v1.919q-0.569-0.026-1.138-0.032-0.708-0.008-1.415 0.037c-1.93 0.126-4.023 0.728-6.149 2.237-2.911 2.066-2.731 1.95-4.14 2.75-0.396 0.223-1.342 0.574-2.185 0.798-0.841 0.225-1.753 0.333-1.751 0.333v4.229s0.768 0.108 1.61 0.333c0.842 0.224 1.789 0.575 2.185 0.799 1.41 0.798 1.228 0.683 4.14 2.75 2.126 1.509 4.22 2.11 6.148 2.236 0.88 0.058 1.716 0.041 2.555 0.005v1.918l7.222-4.168-7.222-4.17v2.176c-0.86 0.038-1.611 0.065-2.278 0.021-1.364-0.09-2.417-0.357-3.979-1.465-2.244-1.593-2.866-2.027-3.68-2.508 0.889-0.518 1.449-0.906 3.822-2.59 1.56-1.109 2.614-1.377 3.978-1.466 0.667-0.044 1.418-0.017 2.278 0.02v2.176l7.221-4.168z",
+                                      "viewBox": [
+                                        0,
+                                        0,
+                                        24,
+                                        24
+                                      ],
+                                      "fill": "$text",
+                                      "width": 16,
+                                      "height": 16
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "uVvLk",
+                              "name": "Tile Chrome built-in AI",
+                              "width": 32,
+                              "height": 32,
+                              "fill": "$surface",
+                              "cornerRadius": "$r-sm",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "LD6RU",
+                                  "name": "Provider icon / Chrome built-in AI",
+                                  "reusable": true,
+                                  "width": 16,
+                                  "height": 16,
+                                  "layout": "none",
+                                  "children": [
+                                    {
+                                      "type": "path",
+                                      "id": "Pw662",
+                                      "x": 0,
+                                      "y": 0,
+                                      "name": "Logo",
+                                      "geometry": "M12 0c-3.79 0-7.169 1.757-9.368 4.501l3.953 6.848a5.454 5.454 0 0 1 5.415-4.804h10.691a12 12 0 0 0-10.691-6.545z m-10.069 5.47a11.943 11.943 0 0 0-1.931 6.53c0 6.012 4.42 10.991 10.189 11.864l3.953-6.847a5.45 5.45 0 0 1-6.865-2.29z m13.342 2.166a5.446 5.446 0 0 1 1.45 7.09l0.002 0.001h-0.002l-5.344 9.257c0.206 0.01 0.413 0.016 0.621 0.016 6.627 0 12-5.373 12-12 0-1.54-0.29-3.011-0.818-4.364z m-3.273 8.728a4.364 4.364 0 1 1 0-8.728 4.364 4.364 0 0 1 0 8.728z",
+                                      "viewBox": [
+                                        0,
+                                        0,
+                                        24,
+                                        24
+                                      ],
+                                      "fill": "$text",
+                                      "width": 16,
+                                      "height": 16
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
                         }
                       ]
                     }
