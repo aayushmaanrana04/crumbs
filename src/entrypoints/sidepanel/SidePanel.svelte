@@ -1,10 +1,12 @@
 <script lang="ts">
   import { browser } from '#imports';
   import ArrowUp from '@lucide/svelte/icons/arrow-up';
+  import { liveQuery } from 'dexie';
   import Library from '@lucide/svelte/icons/library';
+  import X from '@lucide/svelte/icons/x';
   import { describeOutcome } from '@/lib/capture/describe';
   import { hostnameOf, isCapturableUrl } from '@/lib/capture/url';
-  import { pageContext, type PageContext, type PageInfo } from '@/lib/library/page-context';
+  import { findSavedPage, pageContext, type PageContext, type PageInfo } from '@/lib/library/page-context';
   import { rpc } from '@/lib/rpc/client';
   import { ask, type AskTurn } from '@/lib/search/ask';
   import { normalizeSite, siteMatches } from '@/lib/settings/capture';
@@ -17,11 +19,11 @@
   import EmptyState from '@/ui/kit/EmptyState.svelte';
   import IconButton from '@/ui/kit/IconButton.svelte';
   import Logo from '@/ui/kit/Logo.svelte';
+  import Menu, { type MenuItem } from '@/ui/kit/Menu.svelte';
+  import PageCard from '@/ui/kit/PageCard.svelte';
   import RelatedCard from '@/ui/kit/RelatedCard.svelte';
   import SectionHeading from '@/ui/kit/SectionHeading.svelte';
   import Spinner from '@/ui/kit/Spinner.svelte';
-  import SettingsRow from '@/ui/kit/SettingsRow.svelte';
-  import Toggle from '@/ui/kit/Toggle.svelte';
   import { docHref } from '@/ui/router.svelte';
   import { stored } from '@/ui/storage.svelte';
 
@@ -43,10 +45,24 @@
   let answer = $state<AskTurn | null>(null);
   let asking = $state(false);
   let askError = $state('');
+  let answerEl = $state<HTMLElement>();
+
+  // Bring the answer into view: the composer sits below the scrolling body.
+  $effect(() => {
+    if (answer || asking) answerEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
 
   const follow = $derived(settings.value?.follow ?? false);
   const host = $derived(view.state === 'ready' ? hostnameOf(view.page.url) : '');
   const paused = $derived(view.state === 'ready' && !!settings.value && isPaused(view.page.url, settings.value));
+  /** Offer follow mode once you switch tabs, until you turn it on or say not now. */
+  const offerFollow = $derived(switchedTo !== null && !follow && !settings.value?.followPromptDismissed);
+
+  const menu = $derived<MenuItem[]>([
+    { label: follow ? 'Stop following my browsing' : 'Follow my browsing', onselect: () => setFollow(!follow) },
+    ...(follow && host ? [{ label: `${paused ? 'Resume' : 'Pause'} on ${normalizeSite(host)}`, onselect: () => setPaused(!paused) }] : []),
+    { label: 'Settings', onselect: () => void browser.tabs.create({ url: browser.runtime.getURL('/app.html#/settings') }) },
+  ]);
 
   async function show(id: number) {
     tabId = id;
@@ -74,6 +90,17 @@
     const context = await pageContext(view.page);
     if (view.state === 'ready') view = { ...view, context };
   }
+
+  // Pages saved or deleted elsewhere (the shortcut, the toast, the library) update the panel.
+  $effect(() => {
+    if (view.state !== 'ready') return;
+    const { page } = view;
+    const savedId = view.context.saved?.id;
+    const subscription = liveQuery(() => findSavedPage(page)).subscribe((doc) => {
+      if (doc?.id !== savedId) void refresh();
+    });
+    return () => subscription.unsubscribe();
+  });
 
   $effect(() => {
     browser.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
@@ -131,6 +158,11 @@
     if (on && switchedTo !== null) await show(switchedTo);
   }
 
+  async function dismissFollowPrompt() {
+    const current = await panelSettings.getValue();
+    await panelSettings.setValue({ ...current, followPromptDismissed: true });
+  }
+
   async function setPaused(on: boolean) {
     const current = await panelSettings.getValue();
     const site = normalizeSite(host);
@@ -162,24 +194,23 @@
 <div class="panel">
   <header class="head">
     <Logo size={18} wordmark />
-    <a class="library" href="#/library" aria-label="Open library" title="Open library"><Library size={16} /></a>
+    <div class="head-actions">
+      <a class="library" href="#/library" aria-label="Open library" title="Open library"><Library size={16} /></a>
+      <Menu items={menu} label="Panel options" />
+    </div>
   </header>
 
-  {#if switchedTo !== null}
-    <div class="switched">
-      <Banner title="You switched tabs">
-        {follow ? 'Follow is paused on this site.' : "Turn on follow to keep the panel in step with the tab you're on."}
-        {#snippet action()}
-          <div class="banner-actions">
-            {#if !follow}<Button size="sm" kind="primary" onclick={() => setFollow(true)}>Turn on</Button>{/if}
-            <Button size="sm" kind="ghost" onclick={() => show(switchedTo!)}>Show this tab</Button>
-          </div>
-        {/snippet}
-      </Banner>
-    </div>
-  {/if}
-
   <main class="body">
+    {#if offerFollow}
+      <Banner title="Follow my browsing?" ondismiss={dismissFollowPrompt}>
+        Keep this panel in step with the tab you're on. Chrome will ask to let Carrel see tab addresses and titles; they're matched on this device and not saved.
+        <span class="banner-actions">
+          <Button size="sm" kind="primary" onclick={() => setFollow(true)}>Turn on</Button>
+          <Button size="sm" kind="ghost" onclick={dismissFollowPrompt}>Not now</Button>
+        </span>
+      </Banner>
+    {/if}
+
     {#if view.state === 'loading'}
       <div class="loading"><Spinner /> Reading this page…</div>
     {:else if view.state === 'unreadable'}
@@ -194,66 +225,74 @@
       </EmptyState>
     {:else}
       {@const { page, context } = view}
-      <section class="page">
-        <p class="site">{siteLabel(page)}</p>
-        <h1 class="title">{page.title || page.url}</h1>
-      </section>
+      {#snippet switched()}
+        {#if switchedTo !== null}
+          <p class="switched">
+            Showing the tab you opened the panel on.
+            <button type="button" class="link" onclick={() => show(switchedTo!)}>Show this tab</button>
+          </p>
+        {/if}
+      {/snippet}
 
       {#if context.saved}
-        {#key context.saved.id}<PanelSaved docId={context.saved.id} />{/key}
-        <Button full href={docHref(context.saved.id)}>Open full summary</Button>
+        {#key context.saved.id}
+          <PanelSaved docId={context.saved.id} site={siteLabel(page)} title={page.title || page.url} extra={switched} />
+        {/key}
+        <Button full href={docHref(context.saved.id)}>Open in library</Button>
       {:else}
-        <div class="save">
-          <Button kind="primary" full disabled={saving} onclick={save}>{saving ? 'Saving…' : 'Save page'}</Button>
-          <p class="hint">{message || 'Or press ⌘⇧S on any page.'}</p>
-        </div>
+        <PageCard site={siteLabel(page)} title={page.title || page.url}>
+          <p class="status">{message || 'Not in your library'}</p>
+          {@render switched()}
+          <div class="row">
+            <Button kind="primary" size="sm" disabled={saving} onclick={save}>{saving ? 'Saving…' : 'Save page'}</Button>
+            <span class="hint">or <kbd>⌘⇧S</kbd> on any page</span>
+          </div>
+        </PageCard>
       {/if}
 
       {#if context.related.length}
         <section class="group">
           <SectionHeading label={context.saved ? 'Related in your library' : "You've seen this before"} />
-          {#each context.related as r (r.doc.id)}<RelatedCard title={r.doc.title} why={r.why} href={docHref(r.doc.id)} />{/each}
+          <div>
+            {#each context.related as r (r.doc.id)}<RelatedCard plain title={r.doc.title} why={r.why} href={docHref(r.doc.id)} />{/each}
+          </div>
         </section>
-      {:else if !context.saved}
-        <EmptyState title="Nothing related yet">Pages you save that share names, tags or words with this one will show up here.</EmptyState>
       {/if}
 
-      {#if context.notes.length}
+      {#if !context.saved && context.notes.length}
         <section class="group">
-          <SectionHeading label="Your notes" />
+          <SectionHeading label="Your notes on these" />
           {#each context.notes as n (n.doc.id)}<RelatedCard title={n.text} why={n.doc.title} href={docHref(n.doc.id)} />{/each}
         </section>
       {/if}
 
-      <section class="group">
-        <SectionHeading label="Quick ask" />
-        <form class="composer" onsubmit={submitQuestion}>
-          <input bind:value={question} placeholder={page.lead ? 'Ask about this page and your library' : 'Ask your library'} aria-label="Question" />
-          <IconButton label="Ask" variant="primary" type="submit" disabled={!question.trim() || asking}><ArrowUp size={15} /></IconButton>
-        </form>
-        <p class="hint">
-          {page.lead ? "Sends this page's text and matching saved passages to your Ask model." : 'Sends matching saved passages to your Ask model.'}
-        </p>
-        {#if asking}<div class="loading"><Spinner /> Reading your sources…</div>{/if}
-        {#if askError}<Banner tone="error" title="Couldn't answer">{askError}</Banner>{/if}
-        {#if answer}<AnswerTurn turn={answer} compact />{/if}
-      </section>
+      {#if asking || askError || answer}
+        <section class="group" bind:this={answerEl}>
+          <SectionHeading label="Answer" />
+          {#if asking}<div class="loading"><Spinner /> Reading your sources…</div>{/if}
+          {#if askError}<Banner tone="error" title="Couldn't answer">{askError}</Banner>{/if}
+          {#if answer}
+            <AnswerTurn turn={answer} compact />
+            <button type="button" class="link clear" onclick={() => (answer = null)}><X size={12} /> Clear</button>
+          {/if}
+        </section>
+      {/if}
     {/if}
   </main>
 
-  <footer class="foot">
-    <SettingsRow
-      title="Follow my browsing"
-      detail="Update the panel as you switch tabs. Chrome will ask to let Carrel see tab addresses and titles; they're matched on this device and not saved."
-    >
-      {#snippet control()}<Toggle label="Follow my browsing" checked={follow} onchange={setFollow} />{/snippet}
-    </SettingsRow>
-    {#if follow && host}
-      <SettingsRow title="Pause on {normalizeSite(host)}">
-        {#snippet control()}<Toggle label="Pause on {normalizeSite(host)}" checked={paused} onchange={setPaused} />{/snippet}
-      </SettingsRow>
-    {/if}
-  </footer>
+  {#if view.state === 'ready'}
+    <footer class="foot">
+      <form class="composer" onsubmit={submitQuestion}>
+        <input bind:value={question} placeholder={view.page.lead ? 'Ask about this page and your library' : 'Ask your library'} aria-label="Question" />
+        <IconButton label="Ask" variant="primary" type="submit" disabled={!question.trim() || asking}><ArrowUp size={15} /></IconButton>
+      </form>
+      {#if question.trim()}
+        <p class="hint">
+          {view.page.lead ? "Sends this page's text and matching saved passages to your Ask model." : 'Sends matching saved passages to your Ask model.'}
+        </p>
+      {/if}
+    </footer>
+  {/if}
 </div>
 
 <style>
@@ -267,16 +306,22 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px 10px 16px;
+    padding: 8px 8px 8px 16px;
     border-bottom: 1px solid var(--border);
   }
-  .switched {
-    padding: 12px 12px 0;
-  }
-  .banner-actions {
+  .head-actions {
     display: flex;
-    gap: 6px;
-    margin-top: 8px;
+    align-items: center;
+    gap: 2px;
+  }
+  .library {
+    display: flex;
+    padding: 7px;
+    border-radius: var(--r-sm);
+    color: var(--text-2);
+  }
+  .library:hover {
+    background: var(--hover);
   }
   .body {
     flex: 1;
@@ -285,6 +330,11 @@
     gap: 20px;
     padding: 16px;
     overflow-y: auto;
+  }
+  .banner-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
   }
   .loading {
     display: flex;
@@ -296,41 +346,60 @@
   .center {
     margin: 10px 0;
   }
-  .page {
-    display: grid;
-    gap: 4px;
-  }
-  .site {
+  .status,
+  .switched {
     margin: 0;
     font-size: var(--text-sm);
-    color: var(--text-3);
+    color: var(--text-2);
   }
-  .title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: -0.3px;
-    line-height: 1.3;
-  }
-  .save {
-    display: grid;
-    gap: 6px;
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
   .hint {
     margin: 0;
     font-size: var(--text-sm);
     color: var(--text-3);
   }
+  kbd {
+    font: inherit;
+  }
+  .link {
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    justify-self: start;
+    color: var(--text-2);
+    text-decoration: none;
+  }
   .group {
     display: grid;
     gap: 6px;
+  }
+  .foot {
+    display: grid;
+    gap: 6px;
+    padding: 12px 16px 16px;
+    border-top: 1px solid var(--border);
   }
   .composer {
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 4px 4px 4px 12px;
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     background: var(--surface);
   }
   .composer input {
@@ -342,18 +411,5 @@
   }
   .composer input:focus {
     outline: none;
-  }
-  .foot {
-    padding: 4px 0;
-    border-top: 1px solid var(--border);
-  }
-  .library {
-    display: flex;
-    padding: 6px;
-    border-radius: var(--r-sm);
-    color: var(--text-2);
-  }
-  .library:hover {
-    background: var(--hover);
   }
 </style>

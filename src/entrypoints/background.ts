@@ -31,11 +31,11 @@ function backgroundAdapter(kind: ProviderKind) {
 async function saveFromUserAction(tabId: number, selection?: string) {
   try {
     const outcome = await captureTab(tabId, 'manual', selection);
-    await showToast(tabId, describeOutcome(outcome));
+    await showToast(tabId, describeOutcome(outcome), { action: 'View' });
     void drainQueue();
     return outcome;
   } catch (error) {
-    await showToast(tabId, error instanceof Error ? error.message : String(error), true);
+    await showToast(tabId, error instanceof Error ? error.message : String(error), { error: true });
     throw error;
   }
 }
@@ -137,9 +137,13 @@ export default defineBackground(() => {
     async 'capture.auto'(_args, sender) {
       if (sender.tab?.id === undefined) return null;
       const outcome = await captureTab(sender.tab.id, 'auto');
-      if (outcome.status === 'saved') await showToast(sender.tab.id, 'Saved automatically to Carrel');
+      if (outcome.status === 'saved') await showToast(sender.tab.id, 'Saved automatically to Carrel', { action: 'View' });
       void drainQueue();
       return outcome;
+    },
+    async 'panel.open'(_args, sender) {
+      // Called straight from the toast's click, before any await, so Chrome still sees the gesture.
+      if (sender.tab?.id !== undefined) await browser.sidePanel.open({ tabId: sender.tab.id });
     },
     async 'jobs.run'() {
       void drainQueue();

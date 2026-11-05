@@ -2,7 +2,7 @@
 import { browser } from '#imports';
 import { captureSettings, isAutoCaptureSite, isBlocked, isSensitiveUrl, sitePatterns } from '../settings/capture';
 import type { ExtractedPage } from './extract';
-import { CaptureError, saveExtractedPage, type SaveOutcome } from './save';
+import { CaptureError, chooseCanonical, saveExtractedPage, type SaveOutcome } from './save';
 export { describeOutcome } from './describe';
 import { isCapturableUrl } from './url';
 
@@ -33,45 +33,73 @@ export async function captureTab(tabId: number, source: 'manual' | 'auto', selec
   return saveExtractedPage(page, source);
 }
 
-/** Brief confirmation inside the page. Self-contained because it's serialised into the tab. */
-function renderToast(text: string, isError: boolean) {
+// The extension API as it's named inside the page, where renderToast runs.
+declare const chrome: typeof browser;
+
+/**
+ * Brief confirmation inside the page, with an optional button that opens the side panel.
+ * Self-contained because it's serialised into the tab.
+ */
+function renderToast(text: string, isError: boolean, action: string | null) {
   const id = 'carrel-toast-host';
   document.getElementById(id)?.remove();
   const host = document.createElement('div');
   host.id = id;
   const root = host.attachShadow({ mode: 'closed' });
   const toast = document.createElement('div');
-  toast.textContent = text;
   toast.setAttribute('role', 'status');
+  toast.append(text);
   // Matches the Toast component (design/summaryse.pen): ink background, 12px radius.
   toast.style.cssText = [
-    'position:fixed', 'bottom:24px', 'right:24px', 'z-index:2147483647', 'padding:10px 14px',
+    'position:fixed', 'bottom:24px', 'right:24px', 'z-index:2147483647', 'display:flex', 'align-items:center',
+    'gap:12px', `padding:${action ? '6px 6px 6px 14px' : '10px 14px'}`,
     'border-radius:12px', 'font:500 13px/1.4 system-ui,-apple-system,sans-serif',
     `color:${isError ? '#F8A89C' : '#FFFFFF'}`, 'background:#1A1A19',
     'box-shadow:0 6px 20px rgba(0,0,0,.18)', 'transition:opacity .15s, transform .15s',
     'opacity:0', 'transform:translateY(4px)',
   ].join(';');
+  const hide = () => {
+    toast.style.opacity = '0';
+    setTimeout(() => host.remove(), 250);
+  };
+  if (action) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = action;
+    button.style.cssText = [
+      'all:unset', 'cursor:pointer', 'padding:5px 10px', 'border-radius:8px',
+      'font:600 13px/1.4 system-ui,-apple-system,sans-serif', 'color:#1A1A19', 'background:#FFFFFF',
+    ].join(';');
+    // The click is the user gesture Chrome needs to open the side panel.
+    button.onclick = () => {
+      void chrome.runtime.sendMessage({ rpc: 'panel.open', args: {} });
+      hide();
+    };
+    toast.appendChild(button);
+  }
   root.appendChild(toast);
   document.documentElement.appendChild(host);
   requestAnimationFrame(() => {
     toast.style.opacity = '1';
     toast.style.transform = 'none';
   });
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    setTimeout(() => host.remove(), 250);
-  }, 2600);
+  // Longer when there's a button to reach, and held while the pointer is on it.
+  let timer = setTimeout(hide, action ? 6000 : 2600);
+  toast.onmouseenter = () => clearTimeout(timer);
+  toast.onmouseleave = () => (timer = setTimeout(hide, 2000));
 }
 
-export async function showToast(tabId: number, text: string, isError = false): Promise<void> {
+export async function showToast(tabId: number, text: string, options: { error?: boolean; action?: string } = {}): Promise<void> {
   await browser.scripting
-    .executeScript({ target: { tabId }, func: renderToast, args: [text, isError] })
+    .executeScript({ target: { tabId }, func: renderToast, args: [text, !!options.error, options.action ?? null] })
     .catch(() => undefined); // Restricted pages can't show it; the action badge still updates.
 }
 
 export interface PagePreview {
   url: string;
   title: string;
+  /** The address the page is saved under, so the panel can find it in the library. */
+  canonicalUrl: string;
   siteName?: string;
   excerpt: string;
   /** Opening text, for matching and as context for quick ask. */
@@ -89,7 +117,7 @@ export async function previewTab(tabId: number): Promise<PagePreview | null> {
     const [injection] = await browser.scripting.executeScript({ target: { tabId }, files: ['/extract.js'] });
     const page = injection?.result as ExtractedPage | undefined;
     if (!page) return null;
-    return { url: page.url, title: page.title, siteName: page.siteName, excerpt: page.excerpt, lead: page.markdown.slice(0, LEAD_CHARS) };
+    return { url: page.url, title: page.title, canonicalUrl: chooseCanonical(page), siteName: page.siteName, excerpt: page.excerpt, lead: page.markdown.slice(0, LEAD_CHARS) };
   } catch {
     return null; // No access to this tab (opened without a click, or a restricted page).
   }

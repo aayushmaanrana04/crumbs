@@ -125,6 +125,46 @@ export async function searchPassages(query: string, options: SearchOptions = {})
   return { hits, mode, semanticError };
 }
 
+export interface SharedTerms {
+  docId: string;
+  /** The rarest shared words first. */
+  terms: string[];
+}
+
+/** Words found in at most this share of saved pages count as distinctive. */
+const DISTINCTIVE_SHARE = 0.25;
+
+/**
+ * Saved pages that share distinctive words with some text, for "related to this page". Unlike
+ * search, words match exactly, and words common across the library (or English) don't count:
+ * pages are ranked by how rare their shared words are (inverse document frequency).
+ */
+export async function pagesSharingTerms(text: string, options: { minTerms?: number; exclude?: string } = {}): Promise<SharedTerms[]> {
+  const index = await keywordIndex();
+  const docCount = await db.documents.count();
+  if (docCount === 0) return [];
+  const tokenize = MiniSearch.getDefault('tokenize') as (text: string) => string[];
+  const words = new Set(tokenize(text).map((w) => w.toLowerCase()).filter((w) => w.length > 1));
+
+  const byDoc = new Map<string, { score: number; terms: { term: string; idf: number }[] }>();
+  for (const term of words) {
+    const docs = new Set(index.search(term, { prefix: false, fuzzy: false }).map((h) => h.docId as string));
+    if (options.exclude) docs.delete(options.exclude);
+    if (docs.size === 0 || docs.size > Math.max(1, docCount * DISTINCTIVE_SHARE)) continue;
+    const idf = Math.log(docCount / docs.size);
+    for (const docId of docs) {
+      const entry = byDoc.get(docId) ?? { score: 0, terms: [] };
+      entry.score += idf;
+      entry.terms.push({ term, idf });
+      byDoc.set(docId, entry);
+    }
+  }
+  return [...byDoc.entries()]
+    .filter(([, e]) => e.terms.length >= (options.minTerms ?? 2))
+    .sort((a, b) => b[1].score - a[1].score)
+    .map(([docId, e]) => ({ docId, terms: e.terms.sort((a, b) => b.idf - a.idf).map((t) => t.term) }));
+}
+
 /** One result per document, keeping its best passage. */
 export function groupByDocument(hits: PassageHit[]): PassageHit[] {
   const seen = new Set<string>();

@@ -1,8 +1,9 @@
 <script lang="ts">
-  let { title, why, href }: { title: string; why: string; href: string } = $props();
+  // `plain` drops the tile, for short lists in the side panel.
+  let { title, why, href, plain = false }: { title: string; why: string; href: string; plain?: boolean } = $props();
 </script>
 
-<a class="related" {href}>
+<a class="related" class:plain {href}>
   <span class="title">{title}</span>
   <span class="why">{why}</span>
 </a>
@@ -18,7 +19,14 @@
     color: inherit;
     transition: background var(--dur) var(--ease);
   }
-  .related:hover {
+  .related.plain {
+    padding: 8px 10px;
+    margin: 0 -10px;
+    border-radius: var(--r-sm);
+    background: none;
+  }
+  .related:hover,
+  .related.plain:hover {
     background: var(--hover);
   }
   .title {

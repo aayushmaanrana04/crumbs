@@ -7,6 +7,8 @@ export interface PanelSettings {
   follow: boolean;
   /** Sites where follow mode is paused. */
   pausedSites: string[];
+  /** "Not now" on the prompt to turn follow on. */
+  followPromptDismissed?: boolean;
 }
 
 export const panelSettings = storage.defineItem<PanelSettings>('local:panel', {

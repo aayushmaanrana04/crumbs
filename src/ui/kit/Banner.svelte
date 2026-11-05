@@ -2,13 +2,15 @@
   import type { Snippet } from 'svelte';
   import Info from '@lucide/svelte/icons/info';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
+  import X from '@lucide/svelte/icons/x';
 
   let {
     title,
     tone = 'info',
     children,
     action,
-  }: { title: string; tone?: 'info' | 'error'; children?: Snippet; action?: Snippet } = $props();
+    ondismiss,
+  }: { title: string; tone?: 'info' | 'error'; children?: Snippet; action?: Snippet; ondismiss?: () => void } = $props();
 </script>
 
 <div class="banner {tone}" role={tone === 'error' ? 'alert' : 'status'}>
@@ -18,6 +20,7 @@
     {#if children}<span>{@render children()}</span>{/if}
   </div>
   {#if action}<div class="action">{@render action()}</div>{/if}
+  {#if ondismiss}<button type="button" class="dismiss" aria-label="Dismiss" onclick={ondismiss}><X size={14} /></button>{/if}
 </div>
 
 <style>
@@ -46,6 +49,20 @@
   strong {
     font-size: var(--text-md);
     font-weight: 600;
+    color: var(--text);
+  }
+  .dismiss {
+    display: flex;
+    margin: -4px -6px 0 0;
+    padding: 4px;
+    border: none;
+    border-radius: var(--r-sm);
+    background: none;
+    color: var(--text-3);
+    cursor: pointer;
+  }
+  .dismiss:hover {
+    background: var(--hover);
     color: var(--text);
   }
   .action :global(.btn.secondary) {

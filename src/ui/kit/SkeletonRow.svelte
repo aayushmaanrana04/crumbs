@@ -1,3 +1,8 @@
+<script lang="ts">
+  // Placeholder lines while content loads.
+</script>
+
+
 <div class="skeleton" aria-hidden="true">
   <span class="line long"></span>
   <span class="line short"></span>

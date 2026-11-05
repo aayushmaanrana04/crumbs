@@ -21,7 +21,7 @@ export class CaptureError extends Error {
 const MIN_TEXT_CHARS = 80;
 
 /** Trust a declared canonical URL only when it points at the same site. */
-function chooseCanonical(page: ExtractedPage): string {
+export function chooseCanonical(page: ExtractedPage): string {
   const declared = page.declaredCanonicalUrl;
   if (declared && hostnameOf(declared) === hostnameOf(page.url)) {
     try {

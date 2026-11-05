@@ -1,111 +1,71 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { db, normalizeInsight } from '@/lib/db/schema';
   import { updateDocument } from '@/lib/library/documents';
   import { aiStatuses } from '@/ui/ai-status.svelte';
-  import { citations } from '@/ui/citations.svelte';
-  import Markdown from '@/ui/components/Markdown.svelte';
-  import Citation from '@/ui/kit/Citation.svelte';
-  import CitedPassage from '@/ui/kit/CitedPassage.svelte';
-  import { docHref } from '@/ui/router.svelte';
   import AiStatus from '@/ui/components/AiStatus.svelte';
+  import DocInsights from '@/ui/components/DocInsights.svelte';
   import DocProjects from '@/ui/components/DocProjects.svelte';
   import NotesField from '@/ui/components/NotesField.svelte';
-  import NumberedPoint from '@/ui/kit/NumberedPoint.svelte';
   import HighlightCard from '@/ui/kit/HighlightCard.svelte';
+  import PageCard from '@/ui/kit/PageCard.svelte';
   import SectionHeading from '@/ui/kit/SectionHeading.svelte';
+  import SkeletonRow from '@/ui/kit/SkeletonRow.svelte';
   import { live } from '@/ui/live.svelte';
 
-  // The side panel for a page that's already in the library: status, gist, key points, projects, highlights, notes.
-  let { docId }: { docId: string } = $props();
+  // The side panel for a page that's already in the library: its card with the summary's status,
+  // the whole summary, then projects, highlights and notes.
+  let { docId, site, title, extra }: { docId: string; site: string; title: string; extra?: Snippet } = $props();
 
   const doc = live(() => db.documents.get(docId), undefined);
   const stored = live(() => db.insights.get(docId), undefined);
   const highlights = live(() => db.highlights.where('docId').equals(docId).sortBy('createdAt'), []);
   const ai = aiStatuses();
   const insight = $derived(stored.value ? normalizeInsight(stored.value) : undefined);
-  // Only read while a summary is shown, so `insight` is set.
-  const cites = citations(() => insight!, () => doc.value?.markdown);
+  const status = $derived(ai.get(docId));
+  const pending = $derived([status.insights, status.embed].some((s) => s === 'queued' || s === 'running'));
 </script>
 
-{#snippet citeFor(key: 'gist' | number)}
-  {#if cites.span(key)}<Citation active={cites.isOpen(key)} onclick={() => cites.toggle(key)} />{/if}
-{/snippet}
+<PageCard {site} {title}>
+  <AiStatus {docId} {status} model={insight?.model} at={insight?.createdAt} />
+  {@render extra?.()}
+</PageCard>
 
-<!-- Opens the page in the app with the passage shown (links in the panel open a new tab). -->
-{#snippet passage(key: 'gist' | number)}
-  {@const span = cites.span(key)}
-  {#if span && cites.isOpen(key)}
-    <CitedPassage href={docHref(docId, span)}><Markdown source={cites.text(key)} size="compact" /></CitedPassage>
-  {/if}
-{/snippet}
+{#if insight}
+  <div class="summary"><DocInsights {docId} {insight} markdown={doc.value?.markdown} showRelated={false} /></div>
+{:else if pending}
+  <div class="skeleton"><SkeletonRow /><SkeletonRow /><SkeletonRow /></div>
+{/if}
 
-<div class="saved">
-  <AiStatus {docId} status={ai.get(docId)} model={insight?.model} at={insight?.createdAt} />
+<section>
+  <SectionHeading label="Projects" />
+  <DocProjects {docId} />
+</section>
 
-  {#if insight}
-    <div class="gist-block">
-      <p class="gist">{insight.gist}&nbsp;{@render citeFor('gist')}</p>
-      {@render passage('gist')}
-    </div>
-    {#if insight.keyPoints.length}
-      <section>
-        <SectionHeading label="Key points" />
-        <ol class="points">
-          {#each insight.keyPoints.slice(0, 3) as text, i (i)}
-            <NumberedPoint n={i + 1} {text}>
-              {#snippet cite()}{@render citeFor(i)}{/snippet}
-              {@render passage(i)}
-            </NumberedPoint>
-          {/each}
-        </ol>
-      </section>
-    {/if}
-  {/if}
-
+{#if highlights.value.length}
   <section>
-    <SectionHeading label="Projects" />
-    <DocProjects {docId} />
+    <SectionHeading label="Your highlights" />
+    <div class="stack">
+      {#each highlights.value as h (h.id)}<HighlightCard text={h.text} meta={h.note || undefined} />{/each}
+    </div>
   </section>
+{/if}
 
-  {#if highlights.value.length}
-    <section>
-      <SectionHeading label="Highlights" />
-      <div class="stack">
-        {#each highlights.value as h (h.id)}<HighlightCard text={h.text} meta={h.note || undefined} />{/each}
-      </div>
-    </section>
-  {/if}
-
-  {#if doc.value}
-    <NotesField label="Your notes" rows={3} placeholder="Add a note…" value={doc.value.userNotes} onsave={(text) => updateDocument(docId, { userNotes: text })} />
-  {/if}
-</div>
+{#if doc.value}
+  <NotesField label="Your notes" rows={2} placeholder="Add a note…" value={doc.value.userNotes} onsave={(text) => updateDocument(docId, { userNotes: text })} />
+{/if}
 
 <style>
-  .saved {
+  .summary {
     display: grid;
-    gap: 20px;
   }
-  .gist-block {
+  .skeleton {
     display: grid;
-    gap: 10px;
-  }
-  .gist {
-    margin: 0;
-    font-size: var(--text-lg);
-    font-weight: 500;
-    line-height: 1.5;
+    margin: 0 -12px;
   }
   section {
     display: grid;
     gap: 8px;
-  }
-  .points {
-    display: grid;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
   }
   .stack {
     display: grid;

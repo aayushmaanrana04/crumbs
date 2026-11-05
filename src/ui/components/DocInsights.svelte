@@ -21,9 +21,10 @@
     insight,
     markdown,
     onshow,
-  }: { docId: string; insight: Insight; markdown?: string; onshow?: (passage: string) => void } = $props();
+    showRelated = true,
+  }: { docId: string; insight: Insight; markdown?: string; onshow?: (passage: string) => void; showRelated?: boolean } = $props();
 
-  const related = live(() => findRelated(docId), [] as RelatedDocument[]);
+  const related = live(() => (showRelated ? findRelated(docId) : []), [] as RelatedDocument[]);
   const cites = citations(() => insight, () => markdown);
 </script>
 
